@@ -1,0 +1,669 @@
+[
+  {
+    "id": 1,
+    "name": "Omelete de queijo",
+    "category": "Café da manhã",
+    "time": "15 min",
+    "servings": 2,
+    "needs": [
+      "ovo",
+      "queijo"
+    ],
+    "ingredients": [
+      "2 ovos",
+      "50 g de queijo",
+      "Sal a gosto"
+    ],
+    "steps": [
+      "Bata os ovos com uma pitada de sal.",
+      "Aqueça uma frigideira untada e despeje os ovos.",
+      "Adicione o queijo, dobre e cozinhe até firmar."
+    ]
+  },
+  {
+    "id": 2,
+    "name": "Panqueca simples",
+    "category": "Café da manhã",
+    "time": "20 min",
+    "servings": 4,
+    "needs": [
+      "ovo",
+      "leite",
+      "farinha de trigo"
+    ],
+    "ingredients": [
+      "1 ovo",
+      "1 xícara de leite",
+      "1 xícara de farinha de trigo",
+      "1 pitada de sal"
+    ],
+    "steps": [
+      "Misture todos os ingredientes até ficar homogêneo.",
+      "Despeje uma porção em frigideira antiaderente.",
+      "Doure dos dois lados e sirva com recheio a gosto."
+    ]
+  },
+  {
+    "id": 3,
+    "name": "Arroz temperado",
+    "category": "Almoço e jantar",
+    "time": "25 min",
+    "servings": 3,
+    "needs": [
+      "arroz",
+      "alho",
+      "cebola"
+    ],
+    "ingredients": [
+      "1 xícara de arroz",
+      "2 dentes de alho",
+      "1/2 cebola",
+      "2 xícaras de água",
+      "Sal a gosto"
+    ],
+    "steps": [
+      "Refogue a cebola e o alho picados.",
+      "Acrescente o arroz e mexa por um minuto.",
+      "Adicione água e sal; cozinhe até secar e amaciar."
+    ]
+  },
+  {
+    "id": 4,
+    "name": "Arroz com ovo",
+    "category": "Almoço e jantar",
+    "time": "15 min",
+    "servings": 1,
+    "needs": [
+      "arroz",
+      "ovo"
+    ],
+    "ingredients": [
+      "1 xícara de arroz cozido",
+      "1 ovo",
+      "1 colher de chá de óleo",
+      "Sal a gosto"
+    ],
+    "steps": [
+      "Aqueça o óleo em uma frigideira.",
+      "Mexa o ovo até cozinhar completamente.",
+      "Junte o arroz cozido, misture e aqueça bem."
+    ]
+  },
+  {
+    "id": 5,
+    "name": "Macarrão alho e óleo",
+    "category": "Almoço e jantar",
+    "time": "20 min",
+    "servings": 2,
+    "needs": [
+      "macarrão",
+      "alho",
+      "óleo"
+    ],
+    "ingredients": [
+      "200 g de macarrão",
+      "3 dentes de alho",
+      "2 colheres de sopa de óleo",
+      "Sal a gosto"
+    ],
+    "steps": [
+      "Cozinhe o macarrão em água com sal e escorra.",
+      "Doure o alho fatiado no óleo, sem queimar.",
+      "Misture o macarrão ao alho e sirva."
+    ]
+  },
+  {
+    "id": 6,
+    "name": "Crepioca de queijo",
+    "category": "Lanches",
+    "time": "10 min",
+    "servings": 1,
+    "needs": [
+      "ovo",
+      "goma de tapioca",
+      "queijo"
+    ],
+    "ingredients": [
+      "1 ovo",
+      "2 colheres de sopa de goma de tapioca",
+      "2 fatias de queijo"
+    ],
+    "steps": [
+      "Misture o ovo e a goma de tapioca.",
+      "Despeje em frigideira antiaderente aquecida.",
+      "Vire, adicione queijo, dobre e cozinhe até derreter."
+    ]
+  },
+  {
+    "id": 7,
+    "name": "Bolo simples",
+    "category": "Bolos e tortas",
+    "time": "50 min",
+    "servings": 8,
+    "needs": [
+      "farinha de trigo",
+      "ovo",
+      "leite",
+      "açúcar",
+      "fermento"
+    ],
+    "ingredients": [
+      "2 xícaras de farinha de trigo",
+      "2 ovos",
+      "1 xícara de leite",
+      "1 xícara de açúcar",
+      "1 colher de sopa de fermento químico"
+    ],
+    "steps": [
+      "Preaqueça o forno a 180 °C.",
+      "Misture ovos, açúcar e leite; incorpore a farinha.",
+      "Adicione o fermento delicadamente e coloque em forma untada.",
+      "Asse por cerca de 35–40 minutos, até passar no teste do palito."
+    ]
+  },
+  {
+    "id": 8,
+    "name": "Brigadeiro",
+    "category": "Sobremesas",
+    "time": "25 min",
+    "servings": 6,
+    "needs": [
+      "leite condensado",
+      "chocolate em pó",
+      "manteiga"
+    ],
+    "ingredients": [
+      "1 lata de leite condensado",
+      "3 colheres de sopa de chocolate em pó",
+      "1 colher de sopa de manteiga"
+    ],
+    "steps": [
+      "Misture tudo em uma panela.",
+      "Cozinhe em fogo baixo mexendo sempre.",
+      "Quando desgrudar do fundo, desligue e deixe esfriar."
+    ]
+  },
+  {
+    "id": 9,
+    "name": "Vitamina de banana",
+    "category": "Bebidas",
+    "time": "5 min",
+    "servings": 2,
+    "needs": [
+      "banana",
+      "leite"
+    ],
+    "ingredients": [
+      "2 bananas",
+      "400 ml de leite",
+      "Açúcar opcional"
+    ],
+    "steps": [
+      "Descasque e corte as bananas.",
+      "Bata com o leite no liquidificador até ficar cremoso.",
+      "Sirva imediatamente."
+    ]
+  },
+  {
+    "id": 10,
+    "name": "Salada de tomate",
+    "category": "Saladas",
+    "time": "10 min",
+    "servings": 2,
+    "needs": [
+      "tomate",
+      "cebola"
+    ],
+    "ingredients": [
+      "2 tomates",
+      "1/2 cebola",
+      "Azeite, vinagre e sal a gosto"
+    ],
+    "steps": [
+      "Lave os tomates e corte em fatias.",
+      "Fatie a cebola finamente.",
+      "Tempere e misture antes de servir."
+    ]
+  },
+  {
+    "id": 11,
+    "name": "Frango acebolado",
+    "category": "Almoço e jantar",
+    "time": "30 min",
+    "servings": 3,
+    "needs": [
+      "frango",
+      "cebola",
+      "alho"
+    ],
+    "ingredients": [
+      "400 g de frango em tiras",
+      "1 cebola",
+      "2 dentes de alho",
+      "Óleo, sal e pimenta a gosto"
+    ],
+    "steps": [
+      "Tempere o frango com alho, sal e pimenta.",
+      "Doure o frango em uma frigideira com um pouco de óleo.",
+      "Adicione a cebola fatiada e cozinhe até ficar macia e o frango completamente cozido."
+    ]
+  },
+  {
+    "id": 12,
+    "name": "Purê de batata",
+    "category": "Acompanhamentos",
+    "time": "30 min",
+    "servings": 4,
+    "needs": [
+      "batata",
+      "leite",
+      "manteiga"
+    ],
+    "ingredients": [
+      "4 batatas médias",
+      "1/3 xícara de leite",
+      "1 colher de sopa de manteiga",
+      "Sal a gosto"
+    ],
+    "steps": [
+      "Cozinhe as batatas até ficarem macias.",
+      "Amasse e misture com manteiga e leite aos poucos.",
+      "Tempere com sal e aqueça mexendo até ficar cremoso."
+    ]
+  },
+  {
+    "id": 13,
+    "name": "Farofa de ovo",
+    "category": "Acompanhamentos",
+    "time": "15 min",
+    "servings": 3,
+    "needs": [
+      "farinha de mandioca",
+      "ovo",
+      "manteiga"
+    ],
+    "ingredients": [
+      "2 xícaras de farinha de mandioca",
+      "2 ovos",
+      "2 colheres de sopa de manteiga",
+      "Sal a gosto"
+    ],
+    "steps": [
+      "Derreta a manteiga em uma panela.",
+      "Adicione os ovos e mexa até cozinhar.",
+      "Acrescente a farinha aos poucos, mexendo até dourar levemente."
+    ]
+  },
+  {
+    "id": 14,
+    "name": "Sanduíche de queijo",
+    "category": "Lanches",
+    "time": "8 min",
+    "servings": 1,
+    "needs": [
+      "pão",
+      "queijo"
+    ],
+    "ingredients": [
+      "2 fatias de pão",
+      "2 fatias de queijo"
+    ],
+    "steps": [
+      "Coloque o queijo entre as fatias de pão.",
+      "Doure em frigideira ou sanduicheira até o queijo derreter.",
+      "Sirva quente."
+    ]
+  },
+  {
+    "id": 15,
+    "name": "Tapioca com queijo",
+    "category": "Café da manhã",
+    "time": "10 min",
+    "servings": 1,
+    "needs": [
+      "goma de tapioca",
+      "queijo"
+    ],
+    "ingredients": [
+      "3 colheres de sopa de goma de tapioca",
+      "2 fatias de queijo"
+    ],
+    "steps": [
+      "Espalhe a goma em uma frigideira aquecida.",
+      "Quando unir, vire a tapioca.",
+      "Adicione queijo, dobre e aqueça até derreter."
+    ]
+  },
+  {
+    "id": 16,
+    "name": "Mingau de aveia",
+    "category": "Café da manhã",
+    "time": "10 min",
+    "servings": 1,
+    "needs": [
+      "aveia",
+      "leite"
+    ],
+    "ingredients": [
+      "1 xícara de leite",
+      "3 colheres de sopa de aveia",
+      "Canela ou açúcar opcional"
+    ],
+    "steps": [
+      "Misture leite e aveia em uma panela.",
+      "Cozinhe em fogo baixo mexendo até engrossar.",
+      "Finalize com canela ou açúcar, se desejar."
+    ]
+  },
+  {
+    "id": 17,
+    "name": "Sopa de legumes",
+    "category": "Almoço e jantar",
+    "time": "35 min",
+    "servings": 4,
+    "needs": [
+      "batata",
+      "cenoura",
+      "cebola"
+    ],
+    "ingredients": [
+      "2 batatas",
+      "1 cenoura",
+      "1/2 cebola",
+      "Água e sal a gosto"
+    ],
+    "steps": [
+      "Pique os legumes em pedaços pequenos.",
+      "Cozinhe com água e sal até ficarem macios.",
+      "Amasse parte dos legumes para engrossar, se desejar."
+    ]
+  },
+  {
+    "id": 18,
+    "name": "Ovo mexido",
+    "category": "Café da manhã",
+    "time": "5 min",
+    "servings": 1,
+    "needs": [
+      "ovo",
+      "manteiga"
+    ],
+    "ingredients": [
+      "2 ovos",
+      "1 colher de chá de manteiga",
+      "Sal a gosto"
+    ],
+    "steps": [
+      "Bata levemente os ovos.",
+      "Derreta a manteiga em fogo baixo.",
+      "Adicione os ovos e mexa até cozinhar, sem deixar ressecar."
+    ]
+  },
+  {
+    "id": 19,
+    "name": "Bolo de banana",
+    "category": "Bolos e tortas",
+    "time": "45 min",
+    "servings": 8,
+    "needs": [
+      "banana",
+      "ovo",
+      "farinha de trigo",
+      "açúcar",
+      "fermento"
+    ],
+    "ingredients": [
+      "3 bananas maduras",
+      "2 ovos",
+      "1 e 1/2 xícara de farinha de trigo",
+      "1/2 xícara de açúcar",
+      "1 colher de sopa de fermento"
+    ],
+    "steps": [
+      "Amasse as bananas e misture com os ovos e açúcar.",
+      "Acrescente a farinha e, por último, o fermento.",
+      "Asse em forma untada a 180 °C por cerca de 30–35 minutos."
+    ]
+  },
+  {
+    "id": 20,
+    "name": "Chocolate quente",
+    "category": "Bebidas",
+    "time": "10 min",
+    "servings": 2,
+    "needs": [
+      "leite",
+      "chocolate em pó"
+    ],
+    "ingredients": [
+      "2 xícaras de leite",
+      "2 colheres de sopa de chocolate em pó",
+      "Açúcar opcional"
+    ],
+    "steps": [
+      "Misture o leite e o chocolate em uma panela.",
+      "Aqueça mexendo até dissolver e ficar bem quente.",
+      "Adoce a gosto e sirva."
+    ]
+  },
+  {
+    "id": 21,
+    "name": "Feijão temperado",
+    "category": "Almoço e jantar",
+    "time": "15 min",
+    "servings": 4,
+    "needs": [
+      "feijão",
+      "alho",
+      "cebola"
+    ],
+    "ingredients": [
+      "3 xícaras de feijão cozido com caldo",
+      "2 dentes de alho",
+      "1/2 cebola",
+      "Óleo e sal a gosto"
+    ],
+    "steps": [
+      "Refogue alho e cebola em um fio de óleo.",
+      "Acrescente o feijão cozido e misture.",
+      "Ferva por alguns minutos para incorporar os sabores."
+    ]
+  },
+  {
+    "id": 22,
+    "name": "Cuscuz com ovo",
+    "category": "Café da manhã",
+    "time": "15 min",
+    "servings": 2,
+    "needs": [
+      "flocão de milho",
+      "ovo"
+    ],
+    "ingredients": [
+      "1 xícara de flocão de milho",
+      "1/2 xícara de água",
+      "2 ovos",
+      "Sal a gosto"
+    ],
+    "steps": [
+      "Hidrate o flocão com água e sal por 5 minutos.",
+      "Cozinhe na cuscuzeira até ficar macio.",
+      "Prepare os ovos e sirva junto."
+    ]
+  },
+  {
+    "id": 23,
+    "name": "Pão de queijo de frigideira",
+    "category": "Lanches",
+    "time": "10 min",
+    "servings": 1,
+    "needs": [
+      "ovo",
+      "goma de tapioca",
+      "queijo"
+    ],
+    "ingredients": [
+      "1 ovo",
+      "2 colheres de sopa de goma de tapioca",
+      "2 colheres de sopa de queijo ralado"
+    ],
+    "steps": [
+      "Misture todos os ingredientes.",
+      "Despeje em frigideira antiaderente em fogo baixo.",
+      "Doure dos dois lados até cozinhar por dentro."
+    ]
+  },
+  {
+    "id": 24,
+    "name": "Salada de frutas",
+    "category": "Sobremesas",
+    "time": "10 min",
+    "servings": 3,
+    "needs": [
+      "banana",
+      "maçã"
+    ],
+    "ingredients": [
+      "1 banana",
+      "1 maçã",
+      "Outras frutas disponíveis, se desejar"
+    ],
+    "steps": [
+      "Lave as frutas e corte em pedaços pequenos.",
+      "Misture em uma tigela.",
+      "Mantenha refrigerada até servir."
+    ]
+  },
+  {
+    "id": 25,
+    "name": "Batata dourada",
+    "category": "Acompanhamentos",
+    "time": "30 min",
+    "servings": 3,
+    "needs": [
+      "batata",
+      "óleo"
+    ],
+    "ingredients": [
+      "4 batatas",
+      "2 colheres de sopa de óleo",
+      "Sal e temperos a gosto"
+    ],
+    "steps": [
+      "Corte as batatas em cubos e seque.",
+      "Misture com óleo, sal e temperos.",
+      "Asse a 200 °C até dourar, virando na metade do tempo."
+    ]
+  },
+  {
+    "id": 26,
+    "name": "Panqueca de banana",
+    "category": "Café da manhã",
+    "time": "12 min",
+    "servings": 1,
+    "needs": [
+      "banana",
+      "ovo"
+    ],
+    "ingredients": [
+      "1 banana madura",
+      "2 ovos",
+      "Canela opcional"
+    ],
+    "steps": [
+      "Amasse a banana e misture com os ovos.",
+      "Coloque pequenas porções em frigideira antiaderente.",
+      "Doure dos dois lados em fogo baixo."
+    ]
+  },
+  {
+    "id": 27,
+    "name": "Molho de tomate caseiro",
+    "category": "Acompanhamentos",
+    "time": "25 min",
+    "servings": 4,
+    "needs": [
+      "tomate",
+      "alho",
+      "cebola"
+    ],
+    "ingredients": [
+      "4 tomates maduros",
+      "2 dentes de alho",
+      "1/2 cebola",
+      "Azeite e sal a gosto"
+    ],
+    "steps": [
+      "Pique os tomates, o alho e a cebola.",
+      "Refogue alho e cebola em um fio de azeite.",
+      "Adicione os tomates e cozinhe até formar um molho; ajuste o sal."
+    ]
+  },
+  {
+    "id": 28,
+    "name": "Arroz doce",
+    "category": "Sobremesas",
+    "time": "40 min",
+    "servings": 5,
+    "needs": [
+      "arroz",
+      "leite",
+      "açúcar"
+    ],
+    "ingredients": [
+      "1/2 xícara de arroz",
+      "3 xícaras de água",
+      "2 xícaras de leite",
+      "1/2 xícara de açúcar"
+    ],
+    "steps": [
+      "Cozinhe o arroz na água até amaciar.",
+      "Adicione leite e açúcar e cozinhe em fogo baixo, mexendo.",
+      "Desligue quando estiver cremoso; sirva morno ou frio."
+    ]
+  },
+  {
+    "id": 29,
+    "name": "Macarrão com queijo",
+    "category": "Almoço e jantar",
+    "time": "20 min",
+    "servings": 2,
+    "needs": [
+      "macarrão",
+      "queijo",
+      "leite"
+    ],
+    "ingredients": [
+      "200 g de macarrão",
+      "1/2 xícara de leite",
+      "100 g de queijo",
+      "Sal a gosto"
+    ],
+    "steps": [
+      "Cozinhe o macarrão e escorra.",
+      "Aqueça o leite em fogo baixo e adicione o queijo.",
+      "Misture o macarrão ao molho até o queijo derreter."
+    ]
+  },
+  {
+    "id": 30,
+    "name": "Creme de abacate",
+    "category": "Sobremesas",
+    "time": "5 min",
+    "servings": 2,
+    "needs": [
+      "abacate",
+      "leite"
+    ],
+    "ingredients": [
+      "1/2 abacate maduro",
+      "1/2 xícara de leite",
+      "Açúcar opcional"
+    ],
+    "steps": [
+      "Retire a polpa do abacate.",
+      "Bata com o leite até ficar cremoso.",
+      "Adoce a gosto e sirva gelado."
+    ]
+  }
+]

@@ -1,0 +1,33 @@
+TEM NA GELADEIRA — COMUNIDADE E PAINEL ADM
+
+ARQUIVOS PRINCIPAIS
+- index.html: site público, receitas, conta demonstrativa, perfil, favoritos, curtidas/descurtidas, avaliações, comentários e comunidade de criadores.
+- admin.html: painel administrativo, receitas, ingredientes, destaques manuais e moderação de criadores/receitas/comentários.
+- recipes.json / SVG / PNG: arquivos de dados e recursos visuais.
+
+COMO TESTAR
+1. Extraia o ZIP completo para uma pasta.
+2. Abra index.html no navegador.
+3. Para testar o painel, abra admin.html.
+   E-mail de demonstração: admin@temnageladeira.local
+   Senha de demonstração: Geladeira123!
+4. Para testar recursos de comunidade, crie uma conta comum, solicite perfil de criador na área Comunidade e aprove a solicitação no painel ADM. Depois publique uma receita e aprove-a no painel.
+5. No painel, role a lista de receitas dentro da própria janela. Os destaques podem ser selecionados e salvos na seção “Destaques da página inicial”.
+
+CATÁLOGO
+- Foram acrescentadas receitas por categoria para equilibrar o catálogo. Algumas entradas são modelos iniciais de receita e precisam de revisão editorial antes de publicação.
+- A lista padrão de ingredientes inclui ingredientes e variações de despensa; ingredientes personalizados são mesclados em vez de substituir a lista padrão.
+
+FOTOS
+- Pode usar uma URL ou selecionar uma imagem do dispositivo. Para reduzir risco de exceder o armazenamento do navegador, imagens enviadas têm limite de 1,5 MB.
+
+IMPORTANTE — LIMITAÇÕES DA VERSÃO
+Este projeto continua sendo um protótipo estático: contas, sessões, receitas, fotos, curtidas, avaliações, comentários, ingredientes e destaques usam localStorage/sessionStorage. Isso significa que os dados só ficam disponíveis naquele navegador/perfil e não são sincronizados automaticamente com outros visitantes ou dispositivos. A senha administrativa está embutida no código e NÃO é segura para um site publicado.
+
+Antes de publicar para usuários reais, é necessário conectar autenticação e banco de dados (por exemplo, Supabase), criar políticas RLS para autorizações de administrador/criador, armazenar fotos em storage e migrar os dados locais. Não use a senha de demonstração em produção.
+
+
+ATUALIZAÇÃO DO CATÁLOGO
+- Foram acrescentadas 50 receitas em cada categoria existente, exceto Café da manhã.
+- Foram adicionados 500 ingredientes diferentes à lista de seleção, mantendo os ingredientes anteriores.
+- Alguns ingredientes incluem formas de apresentação/preparo para facilitar a busca e a seleção.
