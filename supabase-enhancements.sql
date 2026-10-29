@@ -68,13 +68,19 @@ revoke all on function public.tn_set_recipe_like(text, boolean) from public;
 grant execute on function public.tn_set_recipe_like(text, boolean) to authenticated;
 
 create or replace view public.tn_recipe_metrics_public as
-select m.recipe_key, m.views_total,
+with recipe_keys as (
+  select recipe_key from public.tn_recipe_metrics
+  union
+  select recipe_key from public.tn_recipe_interactions where is_liked
+)
+select k.recipe_key, coalesce(m.views_total, 0) as views_total,
        count(i.user_id) filter (where i.is_liked) as likes_total,
        count(i.user_id) filter (where i.is_liked and i.liked_at >= date_trunc('week', now())) as likes_this_week,
-       m.updated_at
-from public.tn_recipe_metrics m
-left join public.tn_recipe_interactions i on i.recipe_key = m.recipe_key
-group by m.recipe_key, m.views_total, m.updated_at;
+       coalesce(m.updated_at, now()) as updated_at
+from recipe_keys k
+left join public.tn_recipe_metrics m on m.recipe_key = k.recipe_key
+left join public.tn_recipe_interactions i on i.recipe_key = k.recipe_key
+group by k.recipe_key, m.views_total, m.updated_at;
 grant select on public.tn_recipe_metrics_public to anon, authenticated;
 
 create table if not exists public.tn_weekly_plans (
@@ -99,6 +105,9 @@ create table if not exists public.tn_user_achievements (
 alter table public.tn_user_achievements enable row level security;
 drop policy if exists "Users read own achievements" on public.tn_user_achievements;
 create policy "Users read own achievements" on public.tn_user_achievements for select to authenticated using (user_id = auth.uid());
+drop policy if exists "Users earn own achievements" on public.tn_user_achievements;
+create policy "Users earn own achievements" on public.tn_user_achievements for insert to authenticated with check (user_id = auth.uid());
+grant insert on public.tn_user_achievements to authenticated;
 grant select on public.tn_user_achievements to authenticated;
 
 commit;
