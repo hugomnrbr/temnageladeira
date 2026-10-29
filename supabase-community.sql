@@ -136,4 +136,27 @@ grant select, insert, delete on public.recipe_saves to authenticated;
 grant select, insert, delete on public.recipe_likes to authenticated;
 grant select, update on public.community_notifications to authenticated;
 
+
+create table if not exists public.user_recipe_collections (
+  user_id uuid not null references auth.users(id) on delete cascade,
+  recipe_key text not null,
+  recipe_title text not null,
+  recipe_category text not null default '',
+  recipe_snapshot jsonb not null default '{}'::jsonb,
+  is_favorite boolean not null default false,
+  is_saved boolean not null default true,
+  updated_at timestamptz not null default now(),
+  primary key (user_id, recipe_key)
+);
+alter table public.user_recipe_collections enable row level security;
+drop policy if exists "Users read own recipe collections" on public.user_recipe_collections;
+create policy "Users read own recipe collections" on public.user_recipe_collections for select to authenticated using (user_id = auth.uid());
+drop policy if exists "Users add own recipe collections" on public.user_recipe_collections;
+create policy "Users add own recipe collections" on public.user_recipe_collections for insert to authenticated with check (user_id = auth.uid());
+drop policy if exists "Users update own recipe collections" on public.user_recipe_collections;
+create policy "Users update own recipe collections" on public.user_recipe_collections for update to authenticated using (user_id = auth.uid()) with check (user_id = auth.uid());
+drop policy if exists "Users remove own recipe collections" on public.user_recipe_collections;
+create policy "Users remove own recipe collections" on public.user_recipe_collections for delete to authenticated using (user_id = auth.uid());
+grant select, insert, update, delete on public.user_recipe_collections to authenticated;
+
 commit;
