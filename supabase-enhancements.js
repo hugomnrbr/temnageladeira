@@ -60,7 +60,7 @@ function injectRecipeTools(id){
  function renderScaled(){const factor=Number($('tnServings')?.value||baseServings)/baseServings;list.innerHTML='<b>Ingredientes (marque os que já separou)</b>'+source.map((item,i)=>'<label class="tn-ingredient-line" id="tn-ing-row-'+i+'"><input type="checkbox" onchange="this.parentElement.classList.toggle(\'checked\',this.checked)"><span>'+escHtml(scaleText(item,factor))+'</span></label>').join('');}
  $('tnServings').onchange=renderScaled;renderScaled();
 }
-function scaleText(text,factor){if(factor===1)return text;return String(text).replace(/(^|\s)(\d+(?:[.,]\d+)?)(?=\s|\/)/g,(m,p,n)=>{const v=Number(n.replace(',','.'))*factor;return p+(Number.isInteger(v)?v:Number(v.toFixed(2)).toString().replace('.',','))});}
+function scaleText(text,factor){if(factor===1)return text;return String(text).replace(/(^|\s)(\d+\s*\/\s*\d+|\d+(?:[.,]\d+)?)(?=\s|$)/g,(m,p,n)=>{const bits=n.split('/');const amount=bits.length===2?Number(bits[0].trim())/Number(bits[1].trim()):Number(n.replace(',','.'));const v=amount*factor;return p+(Number.isInteger(v)?String(v):Number(v.toFixed(2)).toString().replace('.',','))});}
 window.tnAddPlan=function(id){addPage();const p=loadPlan();p.days=p.days||{};const key=['mon','tue','wed','thu','fri','sat','sun'].find(k=>!p.days[k])||'mon';p.days[key]=String(id);savePlan(p);go('planner');renderPlanner();};
 let cookState={steps:[],index:0,title:''};
 window.tnStartCooking=function(id){const r=getRecipes().find(x=>String(x.id)===String(id));if(!r)return;cookState={steps:r.steps||[],index:0,title:r.name};showCook();};
