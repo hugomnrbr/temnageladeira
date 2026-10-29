@@ -3,6 +3,8 @@
   'use strict';
   const style = document.createElement('style');
   style.textContent = `
+    @media(max-width:500px){.topbar{gap:5px;min-width:0}.topbar .brand{min-width:0;flex:0 1 auto}.topbar .brand .logo{width:48px!important;height:48px!important}.top-actions{min-width:0;flex:0 0 auto;gap:3px!important}.account-btn{padding:8px 9px!important;font-size:11px!important;letter-spacing:-.2px;flex:0 0 auto}.top-actions .icon-btn{padding:5px!important;font-size:19px!important}#adminPanelShortcut{margin-left:0!important}}
+  ` + `
     .community-wrap{max-width:1000px;margin:auto}.community-hero{background:linear-gradient(130deg,#e5f7e8,#fff2d8);border:1px solid #dcebdd;border-radius:22px;padding:24px;margin:10px 0 22px}
     .community-toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:14px 0}.community-toolbar input,.community-form input,.community-form textarea,.community-form select{width:100%;border:1px solid #dfe7de;border-radius:12px;padding:12px;background:#fff;color:#17382b;font:inherit}
     .community-toolbar input{flex:1;min-width:180px}.community-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}.community-user{background:#fff;border:1px solid #e8e9e1;border-radius:18px;padding:17px;text-align:center}.community-avatar{width:76px;height:76px;border-radius:50%;object-fit:cover;background:#e5f5e8;display:grid;place-items:center;font-size:35px;margin:0 auto 10px}.community-stats{display:flex;justify-content:center;gap:18px;color:#65786e;font-size:12px;margin:10px 0}.community-stats b{display:block;color:#064b30;font-size:17px}.community-profile-head{display:grid;grid-template-columns:100px 1fr;gap:18px;align-items:center;background:#fff;border:1px solid #e8e9e1;border-radius:20px;padding:20px;margin:14px 0}.community-profile-head .community-avatar{width:90px;height:90px;margin:0}.community-form{display:grid;gap:12px;background:#fff;border:1px solid #e8e9e1;border-radius:18px;padding:18px;margin:18px 0}.community-post{background:#fff;border:1px solid #e8e9e1;border-radius:18px;overflow:hidden}.community-post-image{height:150px;display:grid;place-items:center;background:#e5f5e8;font-size:55px;overflow:hidden}.community-post-image img{width:100%;height:100%;object-fit:cover}.community-post-body{padding:15px}.community-post-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.community-empty{background:#f3f7f1;padding:22px;border-radius:16px;color:#65786e;text-align:center;grid-column:1/-1}.community-tabs{display:flex;gap:8px;flex-wrap:wrap;margin:16px 0}.community-tabs button{border-radius:22px;padding:9px 13px;background:#edf6ee;color:#064b30;font-weight:700}.community-tabs button.active{background:#07833f;color:#fff}.community-nav-dot{color:#ff941f}.community-note{font-size:12px;color:#65786e}.community-profile-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
@@ -169,13 +171,13 @@
     if(u && (u.role==='admin'||u.role==='master')){
       if(!adminBtn){adminBtn=document.createElement('button');adminBtn.id='adminPanelShortcut';adminBtn.className='account-btn';adminBtn.style.marginLeft='8px';b.insertAdjacentElement('afterend',adminBtn);}
       adminBtn.hidden=false;
-      adminBtn.textContent=u.role==='master'?'👑 Painel Master':'⚙ Painel ADM';
+      adminBtn.textContent=u.role==='master'?'👑 Painel':'⚙ Painel';
       adminBtn.onclick=()=>{window.location.href='admin.html'};
-      b.textContent='👤 Meu perfil';
+      b.textContent='👤 Perfil';
       b.onclick=()=>window.tnCommunityOpenProfile(u.id);
     } else {
       if(adminBtn)adminBtn.hidden=true;
-      if(u){b.textContent='👤 Meu perfil';b.onclick=()=>window.tnCommunityOpenProfile(u.id);}
+      if(u){b.textContent='👤 Perfil';b.onclick=()=>window.tnCommunityOpenProfile(u.id);}
       else {b.textContent='Entrar';b.onclick=()=>{if(typeof openAccount==='function')openAccount();};}
     }
   };
