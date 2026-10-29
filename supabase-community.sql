@@ -93,6 +93,9 @@ create policy "Users submit own recipes" on public.community_recipes
 drop policy if exists "Authors update own pending recipes" on public.community_recipes;
 create policy "Authors update own pending recipes" on public.community_recipes
   for update to authenticated using (author_id = auth.uid() and status = 'pending') with check (author_id = auth.uid() and status = 'pending');
+drop policy if exists "Admins review community recipes" on public.community_recipes;
+create policy "Admins review community recipes" on public.community_recipes
+  for update to authenticated using (exists (select 1 from public.profiles p where p.id = auth.uid() and p.role in ('admin','master'))) with check (exists (select 1 from public.profiles p where p.id = auth.uid() and p.role in ('admin','master')));
 
 drop policy if exists "Users read own recipe saves" on public.recipe_saves;
 create policy "Users read own recipe saves" on public.recipe_saves for select to authenticated using (user_id = auth.uid());
