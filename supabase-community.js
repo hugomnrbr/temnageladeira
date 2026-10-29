@@ -165,7 +165,19 @@
   window.updateAccountButton = function(){
     if(typeof originalUpdateAccountButton==='function')originalUpdateAccountButton();
     const b=document.getElementById('accountBtn'),u=me();if(!b)return;
-    if(u && u.role!=='admin' && u.role!=='master'){b.textContent='👤 '+(u.name||'Perfil').split(' ')[0];b.onclick=()=>window.tnCommunityOpenProfile(u.id)}
+    let adminBtn=document.getElementById('adminPanelShortcut');
+    if(u && (u.role==='admin'||u.role==='master')){
+      if(!adminBtn){adminBtn=document.createElement('button');adminBtn.id='adminPanelShortcut';adminBtn.className='account-btn';adminBtn.style.marginLeft='8px';b.insertAdjacentElement('afterend',adminBtn);}
+      adminBtn.hidden=false;
+      adminBtn.textContent=u.role==='master'?'👑 Painel Master':'⚙ Painel ADM';
+      adminBtn.onclick=()=>{window.location.href='admin.html'};
+      b.textContent='👤 Meu perfil';
+      b.onclick=()=>window.tnCommunityOpenProfile(u.id);
+    } else {
+      if(adminBtn)adminBtn.hidden=true;
+      if(u){b.textContent='👤 Meu perfil';b.onclick=()=>window.tnCommunityOpenProfile(u.id);}
+      else {b.textContent='Entrar';b.onclick=()=>{if(typeof openAccount==='function')openAccount();};}
+    }
   };
   window.addEventListener('load',()=>{ensurePages();setTimeout(()=>{if(typeof window.tnAuthReady!=='undefined')window.tnAuthReady.then(()=>{const u=me();if(u&&client())syncFavorites(u).catch(()=>{});});},300)});
   async function syncFavorites(u){
