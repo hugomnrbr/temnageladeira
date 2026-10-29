@@ -7,6 +7,27 @@ begin;
 alter table public.profiles
   add column if not exists role text not null default 'user';
 
+-- Compatibilidade com esquemas que antes aceitavam apenas 'user' e 'admin'.
+do $
+declare
+  check_row record;
+begin
+  for check_row in
+    select c.conname
+    from pg_constraint c
+    where c.conrelid = 'public.profiles'::regclass
+      and c.contype = 'c'
+      and pg_get_constraintdef(c.oid) ilike '%role%'
+  loop
+    execute format('alter table public.profiles drop constraint %I', check_row.conname);
+  end loop;
+end;
+$;
+
+alter table public.profiles
+  add constraint profiles_role_valid
+  check (role in ('user', 'admin', 'master'));
+
 -- Impede que usuários autenticados promovam a própria conta diretamente pela API.
 create or replace function public.tn_protect_profile_role()
 returns trigger
