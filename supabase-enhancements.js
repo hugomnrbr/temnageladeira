@@ -1,0 +1,85 @@
+/* Melhorias progressivas Tem na Geladeira: métricas, modo cozinha, planejador e estatísticas. */
+(function(){
+'use strict';
+const $=id=>document.getElementById(id);
+const getRecipes=()=>Array.isArray(window.recipes)?window.recipes:(typeof recipes!=='undefined'?recipes:[]);
+const current=()=>window.currentUser||(typeof currentUser!=='undefined'?currentUser:null);
+const db=()=>window.tnSupabase||null;
+const safeRead=(key,fallback)=>{try{return JSON.parse(localStorage.getItem(key)||JSON.stringify(fallback))}catch(_){return fallback}};
+const safeWrite=(key,val)=>localStorage.setItem(key,JSON.stringify(val));
+const escHtml=s=>String(s??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+const norm=s=>String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();
+const localDay=()=>{const d=new Date();if(d.getHours()<9)d.setDate(d.getDate()-1);return d.toISOString().slice(0,10)};
+const weekStart=()=>{const d=new Date();d.setHours(0,0,0,0);d.setDate(d.getDate()-((d.getDay()+6)%7));return d.toISOString().slice(0,10)};
+const styles=`
+.tn-enhanced-panel{background:#fff;border:1px solid #e5e9df;border-radius:18px;padding:16px;margin:16px 0;box-shadow:0 6px 22px #163b2208}
+.tn-tool-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:12px 0}
+.tn-tool-row select,.tn-tool-row input{font:inherit;border:1px solid #dce4d8;border-radius:12px;padding:10px;max-width:100%;background:#fff}
+.tn-ingredient-line{display:flex;align-items:flex-start;gap:10px;padding:10px 2px;border-bottom:1px solid #edf0e9}
+.tn-ingredient-line input{width:19px;height:19px;flex-shrink:0;margin-top:2px;accent-color:#078447}
+.tn-ingredient-line.checked span{text-decoration:line-through;opacity:.55}
+.tn-cook-overlay{position:fixed;inset:0;z-index:99999;background:#fffdf7;color:#153c2c;padding:24px;overflow:auto;display:flex;flex-direction:column;gap:18px}
+.tn-cook-overlay h1{font-size:clamp(28px,5vw,48px);line-height:1.15}.tn-cook-overlay .tn-cook-step{font-size:clamp(20px,3vw,30px);line-height:1.55;max-width:850px}
+.tn-cook-overlay .tn-cook-controls{display:flex;gap:12px;flex-wrap:wrap;margin-top:auto}.tn-cook-overlay button{border:1px solid #dce4d8;border-radius:14px;background:#fff;padding:12px 18px;font:inherit;font-weight:700;color:#075d3b}
+.tn-plan-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.tn-plan-day{border:1px solid #e5e9df;border-radius:16px;padding:12px;min-width:0}.tn-plan-day h3{margin:0 0 8px}.tn-plan-day select{width:100%;padding:10px;border:1px solid #dce4d8;border-radius:10px;font:inherit}.tn-plan-day p{font-size:13px;overflow-wrap:anywhere}
+.tn-stat-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.tn-stat{border:1px solid #e5e9df;border-radius:14px;padding:12px}.tn-stat strong{font-size:24px;display:block}
+.tn-recipe-tools{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0}.tn-recipe-tools button,.tn-recipe-tools select{border:1px solid #dce4d8;border-radius:12px;padding:10px;background:white;font:inherit}
+@media(max-width:520px){.tn-plan-grid{grid-template-columns:1fr}.tn-enhanced-panel{padding:13px}.tn-cook-overlay{padding:18px}}
+`;
+const style=document.createElement('style');style.textContent=styles;document.head.appendChild(style);
+async function rpc(name,args){const c=db();if(!c||!current()?.id)return null;try{const {data,error}=await c.rpc(name,args);if(error){console.warn('[TN metrics]',name,error.message);return null}return data}catch(e){console.warn('[TN metrics]',e);return null}}
+async function recordView(id){const m=safeRead('tn_metric_views',{});m[id]=(m[id]||0)+1;safeWrite('tn_metric_views',m);await rpc('tn_record_recipe_view',{p_recipe_key:String(id)});}
+async function recordLike(id,liked){await rpc('tn_set_recipe_like',{p_recipe_key:String(id),p_liked:!!liked});}
+async function refreshMetrics(){const c=db();if(!c)return;try{const {data,error}=await c.from('tn_recipe_metrics_public').select('*').order('views_total',{ascending:false}).limit(100);if(error)throw error;safeWrite('tn_remote_metrics',data||[]);if(typeof window.tnRefreshHome==='function')window.tnRefreshHome()}catch(e){console.warn('[TN metrics] Ranking remoto indisponível; confira supabase-enhancements.sql.',e.message)}}
+function addPage(){
+ if(!$('page-planner')){const page=document.createElement('section');page.id='page-planner';page.className='page';page.innerHTML='<div class="page-header"><button class="back-btn" onclick="go(\'home\')">‹</button><div><h1>Planejador semanal</h1><p class="muted">Organize as refeições e gere a lista de compras.</p></div></div><div id="tnPlannerContent"></div>';const home=$('page-home');(home?.parentElement||document.body).appendChild(page);}
+ const nav=document.querySelector('.nav-item');if(nav&&!document.querySelector('[data-page="planner"]')){const b=nav.cloneNode(true);b.dataset.page='planner';b.innerHTML='<span>▦</span><small>Planejar</small>';b.onclick=()=>go('planner');(nav.parentElement||nav).appendChild(b);}
+}
+function loadPlan(){return safeRead('tn_weekly_plan',{week:weekStart(),days:{}})}
+function savePlan(plan){plan.week=weekStart();safeWrite('tn_weekly_plan',plan)}
+function renderPlanner(){
+ const host=$('tnPlannerContent');if(!host)return;let plan=loadPlan();if(plan.week!==weekStart())plan={week:weekStart(),days:{}};const rs=getRecipes(),days=[['mon','Segunda'],['tue','Terça'],['wed','Quarta'],['thu','Quinta'],['fri','Sexta'],['sat','Sábado'],['sun','Domingo']];
+ const opts='<option value="">Escolha uma receita</option>'+rs.map(r=>'<option value="'+escHtml(r.id)+'">'+escHtml(r.name)+'</option>').join('');
+ host.innerHTML='<div class="tn-enhanced-panel"><div class="tn-tool-row"><b>Semana de '+new Date(plan.week+'T12:00:00').toLocaleDateString('pt-BR')+'</b><button class="btn btn-light" onclick="tnPlannerShare()">Compartilhar cardápio</button><button class="btn btn-primary" onclick="tnPlannerShopping()">Gerar lista de compras</button></div><div class="tn-plan-grid">'+days.map(([key,label])=>'<div class="tn-plan-day"><h3>'+label+'</h3><select aria-label="Receita de '+label+'" onchange="tnPlannerSet(\''+key+'\',this.value)">'+opts+'</select><p id="tn-plan-'+key+'"></p></div>').join('')+'</div></div>';
+ days.forEach(([key])=>{const sel=host.querySelector('select[onchange*="'+key+'"]');if(sel)sel.value=plan.days[key]||'';const r=rs.find(x=>String(x.id)===String(plan.days[key]));const p=$('tn-plan-'+key);if(p)p.textContent=r?(r.time+' · '+r.servings+' porções'):'Ainda sem receita';});
+}
+window.tnPlannerSet=function(day,id){const p=loadPlan();if(p.week!==weekStart()){p.week=weekStart();p.days={}}if(id)p.days[day]=String(id);else delete p.days[day];savePlan(p);renderPlanner();};
+window.tnPlannerShopping=function(){const p=loadPlan(),rs=getRecipes(),items=safeRead('tn_shopping',[]),selectedSet=new Set(safeRead('tn_ingredients',[]).map(norm)),combined=new Map();Object.values(p.days||{}).forEach(id=>{const r=rs.find(x=>String(x.id)===String(id));if(!r)return;(r.needs||[]).forEach(n=>{if(selectedSet.has(norm(n)))return;const k=norm(n);if(!combined.has(k))combined.set(k,{name:n,done:false,recipe:r.name,recipeId:r.id});});});items.forEach(x=>{if(!combined.has(norm(x.name)))combined.set(norm(x.name),x)});safeWrite('tn_shopping',[...combined.values()]);if(typeof go==='function')go('shopping');if(typeof renderShopping==='function')renderShopping();};
+window.tnPlannerShare=function(){const p=loadPlan(),rs=getRecipes(),names=[['mon','Segunda'],['tue','Terça'],['wed','Quarta'],['thu','Quinta'],['fri','Sexta'],['sat','Sábado'],['sun','Domingo']].map(([k,n])=>{const r=rs.find(x=>String(x.id)===String(p.days[k]));return n+': '+(r?.name||'—')});const text='Meu cardápio da semana — Tem na Geladeira\n'+names.join('\n');if(navigator.share)navigator.share({title:'Meu cardápio semanal',text}).catch(()=>{});else if(navigator.clipboard)navigator.clipboard.writeText(text).then(()=>alert('Cardápio copiado para compartilhar.')).catch(()=>alert(text));else alert(text);};
+function injectRecipeTools(id){
+ const r=getRecipes().find(x=>String(x.id)===String(id));if(!r)return;const detail=$('detailContent');if(!detail)return;
+ const info=detail.querySelector('.detail-info');if(!info)return;
+ const existing=$('tnRecipeTools');if(existing)existing.remove();
+ const baseServings=Math.max(1,Number(r.servings)||4);
+ const tools=document.createElement('div');tools.id='tnRecipeTools';tools.className='tn-enhanced-panel';
+ tools.innerHTML='<h3>Personalize sua receita</h3><div class="tn-tool-row"><label for="tnServings">Porções</label><select id="tnServings">'+[1,2,3,4,5,6,8,10,12,16,20].map(n=>'<option value="'+n+'" '+(n===baseServings?'selected':'')+'>'+n+'</option>').join('')+'</select><button class="btn btn-light" onclick="tnStartCooking('+Number(r.id)+')">▶ Modo cozinha</button><button class="btn btn-light" onclick="tnAddPlan('+Number(r.id)+')">＋ Planejar</button></div><div id="tnScaledIngredients"></div>';
+ info.insertBefore(tools,info.querySelector('.notice')||null);
+ const list=tools.querySelector('#tnScaledIngredients');
+ const source=Array.isArray(r.ingredients)?r.ingredients:[];
+ function renderScaled(){const factor=Number($('tnServings')?.value||baseServings)/baseServings;list.innerHTML='<b>Ingredientes (marque os que já separou)</b>'+source.map((item,i)=>'<label class="tn-ingredient-line" id="tn-ing-row-'+i+'"><input type="checkbox" onchange="this.parentElement.classList.toggle(\'checked\',this.checked)"><span>'+escHtml(scaleText(item,factor))+'</span></label>').join('');}
+ $('tnServings').onchange=renderScaled;renderScaled();
+}
+function scaleText(text,factor){if(factor===1)return text;return String(text).replace(/(^|\s)(\d+(?:[.,]\d+)?)(?=\s|\/)/g,(m,p,n)=>{const v=Number(n.replace(',','.'))*factor;return p+(Number.isInteger(v)?v:Number(v.toFixed(2)).toString().replace('.',','))});}
+window.tnAddPlan=function(id){addPage();const p=loadPlan();p.days=p.days||{};const key=['mon','tue','wed','thu','fri','sat','sun'].find(k=>!p.days[k])||'mon';p.days[key]=String(id);savePlan(p);go('planner');renderPlanner();};
+let cookState={steps:[],index:0,title:''};
+window.tnStartCooking=function(id){const r=getRecipes().find(x=>String(x.id)===String(id));if(!r)return;cookState={steps:r.steps||[],index:0,title:r.name};showCook();};
+function showCook(){let overlay=$('tnCookOverlay');if(!overlay){overlay=document.createElement('div');overlay.id='tnCookOverlay';overlay.className='tn-cook-overlay';document.body.appendChild(overlay)}const n=cookState.steps.length,step=cookState.steps[cookState.index]||'Receita concluída! Bom apetite!';overlay.innerHTML='<button style="align-self:flex-end" onclick="tnCloseCooking()">✕ Fechar</button><p>ETAPA '+Math.min(cookState.index+1,Math.max(n,1))+' DE '+Math.max(n,1)+'</p><h1>'+escHtml(cookState.title)+'</h1><div class="tn-cook-step">'+escHtml(step)+'</div><div class="tn-cook-controls"><button onclick="tnCookMove(-1)" '+(cookState.index<=0?'disabled':'')+'>← Anterior</button><button onclick="tnCookMove(1)">'+(cookState.index>=n-1?'Concluir ✓':'Próxima etapa →')+'</button></div>';}
+window.tnCookMove=function(delta){if(delta>0&&cookState.index>=cookState.steps.length-1){window.tnCloseCooking();return}cookState.index=Math.max(0,Math.min(cookState.steps.length-1,cookState.index+delta));showCook()};
+window.tnCloseCooking=function(){$('tnCookOverlay')?.remove()};
+window.tnRecordLike=function(id,liked){recordLike(id,liked)};
+async function renderAdminStats(){if(!/admin\.html$/.test(location.pathname))return;const target=document.querySelector('main')||document.body;const panel=document.createElement('section');panel.className='tn-enhanced-panel';panel.innerHTML='<h2>Estatísticas do site</h2><p class="muted">Dados locais deste navegador e, após configurar o SQL, métricas compartilhadas no Supabase.</p><div class="tn-stat-grid" id="tnAdminStats"></div><div id="tnAdminTop"></div>';target.appendChild(panel);const local=safeRead('tn_metric_views',{}),rs=getRecipes();$('tnAdminStats').innerHTML='<div class="tn-stat"><strong>'+Object.values(local).reduce((a,b)=>a+Number(b||0),0)+'</strong><span>Visualizações locais</span></div><div class="tn-stat"><strong>'+rs.length+'</strong><span>Receitas no catálogo</span></div><div class="tn-stat"><strong>'+safeRead('tn_favs',[]).length+'</strong><span>Favoritas neste navegador</span></div><div class="tn-stat"><strong>'+safeRead('tn_shopping',[]).length+'</strong><span>Itens na lista deste navegador</span></div>';const remote=safeRead('tn_remote_metrics',[]);if(remote.length)$('tnAdminTop').innerHTML='<h3>Mais vistas (dados compartilhados)</h3>'+remote.slice(0,10).map(x=>'<p>'+escHtml(x.recipe_key)+' — '+Number(x.views_total||0)+' visualizações · '+Number(x.likes_total||0)+' curtidas</p>').join('');}
+const origOpen=window.openRecipe;
+if(typeof origOpen==='function')window.openRecipe=function(id){const result=origOpen.apply(this,arguments);recordView(id);setTimeout(()=>injectRecipeTools(id),0);return result;};
+const origGo=window.go;
+if(typeof origGo==='function')window.go=function(id){const result=origGo.apply(this,arguments);if(id==='planner'){addPage();renderPlanner()}return result;};
+const origToggleLike=window.toggleLike;
+if(typeof origToggleLike==='function')window.toggleLike=function(id){const before=(typeof recipeStats==='function'?recipeStats(id).liked:false);const result=origToggleLike.apply(this,arguments);const after=(typeof recipeStats==='function'?recipeStats(id).liked:!before);if(before!==after)recordLike(id,after);return result;};
+const origPrepareShopping=window.prepareShopping;
+if(typeof origPrepareShopping==='function')window.prepareShopping=function(id){const result=origPrepareShopping.apply(this,arguments);const r=getRecipes().find(x=>String(x.id)===String(id));if(r){const list=safeRead('tn_shopping',[]);(r.needs||[]).forEach(n=>{if(!list.some(x=>norm(x.name)===norm(n)))list.push({name:n,done:false,recipe:r.name,recipeId:r.id})});safeWrite('tn_shopping',list);if(typeof renderShopping==='function')renderShopping()}return result;};
+const origRenderShopping=window.renderShopping;
+if(typeof origRenderShopping==='function')window.renderShopping=function(){const result=origRenderShopping.apply(this,arguments);const host=$('shoppingItems');if(!host)return result;const list=safeRead('tn_shopping',[]);const toolbar=document.createElement('div');toolbar.className='tn-tool-row';toolbar.innerHTML='<input id="tnShoppingSearch" placeholder="Pesquisar na lista..." aria-label="Pesquisar produtos"><button class="btn btn-light" onclick="tnShareShopping()">Compartilhar lista</button><button class="btn btn-light" onclick="tnClearBought()">Remover comprados</button>';host.prepend(toolbar);const input=$('tnShoppingSearch');input.oninput=()=>host.querySelectorAll('.shopping-row').forEach(row=>row.style.display=norm(row.innerText).includes(norm(input.value))?'':'none');host.querySelectorAll('.shopping-row').forEach((row,i)=>{const item=list[i];if(item?.recipe){const label=row.querySelector('label');if(label&&!label.textContent.includes(item.recipe))label.insertAdjacentHTML('beforeend',' <span class="small muted">· '+escHtml(item.recipe)+'</span>')}});return result;};
+window.tnShareShopping=function(){const list=safeRead('tn_shopping',[]).filter(x=>!x.done);const text='Lista de compras — Tem na Geladeira\n'+list.map(x=>'☐ '+x.name+(x.recipe?' (para '+x.recipe+')':'')).join('\n');if(navigator.share)navigator.share({title:'Lista de compras',text}).catch(()=>{});else if(navigator.clipboard)navigator.clipboard.writeText(text).then(()=>alert('Lista copiada.')).catch(()=>alert(text));else alert(text);};
+window.tnClearBought=function(){safeWrite('tn_shopping',safeRead('tn_shopping',[]).filter(x=>!x.done));if(typeof renderShopping==='function')renderShopping();};
+addPage();
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>{if(/admin\.html$/.test(location.pathname))renderAdminStats();refreshMetrics()});else{if(/admin\.html$/.test(location.pathname))renderAdminStats();refreshMetrics()}
+})();
