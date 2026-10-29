@@ -4,7 +4,7 @@
 const $=id=>document.getElementById(id);
 const getRecipes=()=>Array.isArray(window.recipes)?window.recipes:(typeof recipes!=='undefined'?recipes:[]);
 const current=()=>window.currentUser||(typeof currentUser!=='undefined'?currentUser:null);
-const db=()=>window.tnSupabase||window.tnAdminClient||null;
+const db=()=>window.tnSupabase||window.tnAdminClient||(typeof tnAdminClient!=='undefined'?tnAdminClient:null);
 const safeRead=(key,fallback)=>{try{return JSON.parse(localStorage.getItem(key)||JSON.stringify(fallback))}catch(_){return fallback}};
 const safeWrite=(key,val)=>localStorage.setItem(key,JSON.stringify(val));
 const escHtml=s=>String(s??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
