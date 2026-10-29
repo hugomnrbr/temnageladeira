@@ -66,7 +66,7 @@
         if (error) throw error;
         await setSession(data.user);
         closeAccount();
-        if (currentUser?.role === 'admin') location.href = 'admin.html';
+        if (currentUser?.role === 'admin' || currentUser?.role === 'master') location.href = 'admin.html';
         else if (typeof renderHome === 'function') renderHome();
       }
     } catch (error) {
