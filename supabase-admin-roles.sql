@@ -8,22 +8,21 @@ alter table public.profiles
   add column if not exists role text not null default 'user';
 
 -- Compatibilidade com esquemas que antes aceitavam apenas 'user' e 'admin'.
-do $
-declare
+DO $migration$
+DECLARE
   check_row record;
-begin
-  for check_row in
-    select c.conname
-    from pg_constraint c
-    where c.conrelid = 'public.profiles'::regclass
-      and c.contype = 'c'
-      and pg_get_constraintdef(c.oid) ilike '%role%'
-  loop
-    execute format('alter table public.profiles drop constraint %I', check_row.conname);
-  end loop;
-end;
-$;
-
+BEGIN
+  FOR check_row IN
+    SELECT c.conname
+    FROM pg_constraint c
+    WHERE c.conrelid = 'public.profiles'::regclass
+      AND c.contype = 'c'
+      AND pg_get_constraintdef(c.oid) ILIKE '%role%'
+  LOOP
+    EXECUTE format('ALTER TABLE public.profiles DROP CONSTRAINT %I', check_row.conname);
+  END LOOP;
+END;
+$migration$;
 alter table public.profiles
   add constraint profiles_role_valid
   check (role in ('user', 'admin', 'master'));
