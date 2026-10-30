@@ -203,7 +203,7 @@ returns trigger
 language plpgsql
 security definer
 set search_path = public
-as $
+as $$
 begin
   insert into public.profiles (id, display_name, role, creator_status)
   values (
@@ -215,7 +215,7 @@ begin
   on conflict (id) do nothing;
   return new;
 end;
-$;
+$$;
 drop trigger if exists tn_community_profile_on_signup on auth.users;
 create trigger tn_community_profile_on_signup
 after insert on auth.users
