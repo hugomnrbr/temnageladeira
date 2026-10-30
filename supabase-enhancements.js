@@ -37,7 +37,7 @@ function addPage(){
 }
 function loadPlan(){return safeRead('tn_weekly_plan',{week:weekStart(),days:{}})}
 function savePlan(plan){plan.week=weekStart();safeWrite('tn_weekly_plan',plan)}
-async function syncPlanner(){const c=db(),u=current();if(!c||!u?.id)return;try{const {data,error}=await c.from('tn_weekly_plans').select('week_start,plan').eq('user_id',u.id).eq('week_start',weekStart()).maybeSingle();if(error)throw error;if(data?.plan){const p={week:data.week_start,days:data.plan};savePlan(p);renderPlanner()}}catch(e){console.warn('[TN planner] Plano remoto indisponível:',e.message)}}
+async function syncPlanner(){const c=db(),u=current();if(!c||!u?.id)return;try{const {data,error}=await c.from('tn_weekly_plans').select('week_start,plan').eq('user_id',u.id).eq('week_start',weekStart()).maybeSingle();if(error)throw error;if(data?.plan){const remotePlan=data.plan;const p={week:data.week_start,days:remotePlan&&typeof remotePlan==='object'&&remotePlan.days?remotePlan.days:remotePlan};savePlan(p);renderPlanner()}}catch(e){console.warn('[TN planner] Plano remoto indisponível:',e.message)}}
 function renderPlanner(){
  const host=$('tnPlannerContent');if(!host)return;let plan=loadPlan();if(plan.week!==weekStart())plan={week:weekStart(),days:{}};const rs=getRecipes(),days=[['mon','Segunda'],['tue','Terça'],['wed','Quarta'],['thu','Quinta'],['fri','Sexta'],['sat','Sábado'],['sun','Domingo']];
  const opts='<option value="">Escolha uma receita</option>'+rs.map(r=>'<option value="'+escHtml(r.id)+'">'+escHtml(r.name)+'</option>').join('');
@@ -121,5 +121,65 @@ window.renderShopping=function(){const host=$('shoppingItems');if(host){const ol
 
 
 const tnV2Style=document.createElement('style');tnV2Style.textContent='.tn-plan-grid-v2{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr));gap:14px;margin-top:14px}.tn-plan-grid-v2 .tn-plan-day{min-width:0;padding:14px;border:1px solid var(--border,#e7e3dc);border-radius:14px;background:var(--card,#fff)}.tn-plan-grid-v2 .tn-plan-day h3{margin:0 0 12px}.tn-plan-slot{display:grid;grid-template-columns:1fr;gap:5px;margin:12px 0}.tn-plan-slot select,.tn-plan-slot input{width:100%;min-width:0;box-sizing:border-box}.tn-plan-slot>span:first-child{font-weight:600}.tn-plan-slot input[type=number]{max-width:100px}.tn-shopping-edit-v2 input{padding:5px;border:1px solid #d8d5cf;border-radius:8px}@media(max-width:600px){.tn-plan-grid-v2{grid-template-columns:1fr}.tn-plan-grid-v2 .tn-plan-day{padding:12px}.tn-plan-slot{margin:10px 0}}';document.head.appendChild(tnV2Style);
+
+/* Correção de compatibilidade: ações dos botões da receita e plano semanal V2. */
+window.tnStartCooking=function(id){
+ const r=getRecipes().find(x=>String(x.id)===String(id));
+ if(!r){alert('Não foi possível localizar esta receita. Atualize a página e tente novamente.');return;}
+ const steps=Array.isArray(r.steps)?r.steps.filter(x=>String(x||'').trim()):[];
+ let index=0;
+ let overlay=$('tnCookOverlay');
+ if(!overlay){overlay=document.createElement('div');overlay.id='tnCookOverlay';overlay.className='tn-cook-overlay';document.body.appendChild(overlay);}
+ const render=()=>{
+  const total=steps.length;
+  overlay.innerHTML='';
+  const close=document.createElement('button');close.type='button';close.textContent='✕ Fechar';close.style.alignSelf='flex-end';close.onclick=()=>overlay.remove();overlay.appendChild(close);
+  const progress=document.createElement('p');progress.textContent=total?'ETAPA '+(index+1)+' DE '+total:'MODO COZINHA';overlay.appendChild(progress);
+  const title=document.createElement('h1');title.textContent=r.name||'Preparar receita';overlay.appendChild(title);
+  const step=document.createElement('div');step.className='tn-cook-step';step.textContent=total?steps[index]:'Esta receita ainda não possui etapas de preparo cadastradas.';overlay.appendChild(step);
+  const controls=document.createElement('div');controls.className='tn-cook-controls';
+  const prev=document.createElement('button');prev.type='button';prev.textContent='← Anterior';prev.disabled=index===0;prev.onclick=()=>{index=Math.max(0,index-1);render();};
+  const next=document.createElement('button');next.type='button';next.textContent=total&&index===total-1?'Concluir ✓':'Próxima etapa →';next.onclick=()=>{if(!total||index>=total-1){overlay.remove();return;}index++;render();};
+  controls.append(prev,next);overlay.appendChild(controls);
+ };
+ render();
+};
+window.tnAddPlan=function(id){
+ const recipe=getRecipes().find(x=>String(x.id)===String(id));
+ if(!recipe){alert('Não foi possível localizar esta receita. Atualize a página e tente novamente.');return;}
+ addPage();
+ const p=tnReadPlanV2();
+ let target=null;
+ for(const [day] of tnPlanDays){
+  for(const [meal] of tnMealSlots){
+   if(!p.days[day]?.[meal]){target={day,meal};break;}
+  }
+  if(target)break;
+ }
+ if(!target)target={day:'mon',meal:'lunch'};
+ p.days[target.day]=p.days[target.day]||{};
+ p.days[target.day][target.meal]={recipeId:String(recipe.id),servings:Math.max(1,Number(recipe.servings)||2)};
+ savePlan(p);
+ go('planner');
+ window.renderPlanner();
+};
+window.tnPlannerShare=function(){
+ const p=tnReadPlanV2(),rs=getRecipes();
+ const lines=['Meu cardápio semanal — Tem na Geladeira'];
+ tnPlanDays.forEach(([day,label])=>{
+  const meals=p.days[day]||{};
+  const entries=tnMealSlots.map(([meal,name])=>{
+   const entry=meals[meal];if(!entry)return null;
+   const recipe=rs.find(x=>String(x.id)===String(entry.recipeId));
+   return recipe?name+': '+recipe.name+' ('+(entry.servings||2)+' porções)':null;
+  }).filter(Boolean);
+  lines.push(label+': '+(entries.length?entries.join(' · '):'—'));
+ });
+ const content=lines.join('\n');
+ if(navigator.share)navigator.share({title:'Meu cardápio semanal',text:content}).catch(()=>{});
+ else if(navigator.clipboard)navigator.clipboard.writeText(content).then(()=>alert('Cardápio copiado para compartilhar.')).catch(()=>alert(content));
+ else alert(content);
+};
+
 
 })();
