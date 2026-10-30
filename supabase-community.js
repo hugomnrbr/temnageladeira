@@ -190,6 +190,35 @@
       else {b.textContent='Entrar';b.onclick=()=>{if(typeof openAccount==='function')openAccount();};}
     }
   };
+
+  // Social da receita principal, sincronizado por conta no Supabase.
+  function tnSocialEsc(v){return String(v??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));}
+  async function tnRefreshRecipeSocial(keyValue){
+    const c=client(),u=me();if(!c)return;const key=String(keyValue);
+    const [vr,cr]=await Promise.all([c.from('recipe_feedback').select('user_id,vote').eq('recipe_key',key),c.from('recipe_comments').select('id,display_name,body,created_at').eq('recipe_key',key).order('created_at',{ascending:true})]);
+    if(vr.error)throw vr.error;if(cr.error)throw cr.error;
+    const votes=vr.data||[],mine=u?.id?votes.find(x=>x.user_id===u.id):null;
+    const actions=document.querySelector('#detailContent .rating-box .social-actions');
+    if(actions){const bs=actions.querySelectorAll('button');if(bs[0]){bs[0].classList.toggle('active',mine?.vote==='up');bs[0].textContent='♥ Gostei ('+votes.filter(x=>x.vote==='up').length+')';}if(bs[1]){bs[1].classList.toggle('active',mine?.vote==='down');bs[1].classList.toggle('vote-down',mine?.vote==='down');bs[1].textContent='👎 Não gostei ('+votes.filter(x=>x.vote==='down').length+')';}}
+    const panel=document.querySelector('#detailContent .comments-panel');
+    if(panel){const rows=cr.data||[];panel.innerHTML='<h2>💬 Comentários ('+rows.length+')</h2>'+(rows.length?rows.map(x=>'<div class="comment-row"><b>'+tnSocialEsc(x.display_name||'Usuário')+'</b> <span class="small muted">'+new Date(x.created_at).toLocaleString('pt-BR')+'</span><p>'+tnSocialEsc(x.body)+'</p></div>').join(''):'<p class="muted">Ainda não há comentários. Seja a primeira pessoa a comentar!</p>')+'<div class="comment-form"><input id="commentInput" maxlength="500" placeholder="Escreva um comentário..."><button class="btn btn-primary" onclick="addRecipeComment('+JSON.stringify(key)+')">Comentar</button></div>';}
+  }
+  window.voteRecipe=async function(id,vote){
+    const u=me(),c=client();if(!u?.id){if(typeof openAccount==='function')openAccount();return;}if(!c){alert('Serviço de avaliações indisponível.');return;}
+    try{const key=String(id),q=await c.from('recipe_feedback').select('vote').eq('recipe_key',key).eq('user_id',u.id).maybeSingle();if(q.error)throw q.error;
+      const res=q.data?.vote===vote?await c.from('recipe_feedback').delete().eq('recipe_key',key).eq('user_id',u.id):await c.from('recipe_feedback').upsert({recipe_key:key,user_id:u.id,vote},{onConflict:'recipe_key,user_id'});
+      if(res.error)throw res.error;await tnRefreshRecipeSocial(key);
+    }catch(e){alert('Não foi possível registrar sua avaliação: '+e.message);}
+  };
+  window.addRecipeComment=async function(id){
+    const u=me(),c=client(),input=document.getElementById('commentInput'),body=input?.value.trim()||'';
+    if(!u?.id){if(typeof openAccount==='function')openAccount();return;}if(!body){alert('Escreva um comentário antes de enviar.');input?.focus();return;}if(!c){alert('Serviço de comentários indisponível.');return;}
+    const btn=input?.parentElement?.querySelector('button');if(btn){btn.disabled=true;btn.textContent='Enviando…';}
+    try{const res=await c.from('recipe_comments').insert({recipe_key:String(id),user_id:u.id,display_name:u.name||u.email||'Usuário',body});if(res.error)throw res.error;await tnRefreshRecipeSocial(id);}
+    catch(e){alert('Não foi possível publicar o comentário: '+e.message);if(btn){btn.disabled=false;btn.textContent='Comentar';}}
+  };
+  window.addEventListener('load',()=>{const original=window.openRecipe;if(typeof original==='function'&&!window.__tnSocialOpenWrapped){window.openRecipe=function(id){const result=original.apply(this,arguments);if(client())tnRefreshRecipeSocial(id).catch(e=>console.warn('[TN social]',e.message));return result;};window.__tnSocialOpenWrapped=true;}});
+
   window.addEventListener('load',()=>{ensurePages();setTimeout(()=>{if(typeof window.tnAuthReady!=='undefined')window.tnAuthReady.then(()=>{const u=me();if(u&&client())syncFavorites(u).catch(()=>{});});},300)});
   async function syncFavorites(u){
     const c=client();let ids=[];try{ids=typeof favorites!=='undefined'?[...favorites]:[]}catch(_){}
