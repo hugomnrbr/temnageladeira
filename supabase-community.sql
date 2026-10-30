@@ -162,4 +162,38 @@ drop policy if exists "Users remove own recipe collections" on public.user_recip
 create policy "Users remove own recipe collections" on public.user_recipe_collections for delete to authenticated using (user_id = auth.uid());
 grant select, insert, update, delete on public.user_recipe_collections to authenticated;
 
+
+-- Feedback e comentários das receitas do catálogo principal.
+create table if not exists public.recipe_feedback (
+ recipe_key text not null,
+ user_id uuid not null references auth.users(id) on delete cascade,
+ vote text not null check (vote in ('up','down')),
+ created_at timestamptz not null default now(),
+ primary key (recipe_key,user_id)
+);
+create table if not exists public.recipe_comments (
+ id uuid primary key default gen_random_uuid(),
+ recipe_key text not null,
+ user_id uuid not null references auth.users(id) on delete cascade,
+ display_name text not null default 'Usuário',
+ body text not null check (char_length(body) between 1 and 500),
+ created_at timestamptz not null default now()
+);
+create index if not exists recipe_comments_recipe_idx on public.recipe_comments(recipe_key,created_at);
+alter table public.recipe_feedback enable row level security;
+alter table public.recipe_comments enable row level security;
+drop policy if exists "Recipe feedback is publicly readable" on public.recipe_feedback;
+create policy "Recipe feedback is publicly readable" on public.recipe_feedback for select to anon,authenticated using (true);
+drop policy if exists "Users manage own recipe feedback" on public.recipe_feedback;
+create policy "Users manage own recipe feedback" on public.recipe_feedback for all to authenticated using (user_id=auth.uid()) with check (user_id=auth.uid());
+drop policy if exists "Recipe comments are publicly readable" on public.recipe_comments;
+create policy "Recipe comments are publicly readable" on public.recipe_comments for select to anon,authenticated using (true);
+drop policy if exists "Authenticated users add own recipe comments" on public.recipe_comments;
+create policy "Authenticated users add own recipe comments" on public.recipe_comments for insert to authenticated with check (user_id=auth.uid());
+drop policy if exists "Users delete own recipe comments" on public.recipe_comments;
+create policy "Users delete own recipe comments" on public.recipe_comments for delete to authenticated using (user_id=auth.uid() or exists (select 1 from public.profiles p where p.id=auth.uid() and p.role in ('admin','master')));
+grant select on public.recipe_feedback,public.recipe_comments to anon,authenticated;
+grant insert,update,delete on public.recipe_feedback to authenticated;
+grant insert,delete on public.recipe_comments to authenticated;
+
 commit;
