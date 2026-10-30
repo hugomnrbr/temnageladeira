@@ -17,6 +17,7 @@
   window.tnCommunityReadImage=function(input,targetId){const file=input&&input.files&&input.files[0];if(!file)return;if(!/^image\//i.test(file.type)){alert('Escolha um arquivo de imagem.');input.value='';return;}if(file.size>450*1024){alert('A imagem deve ter até 450 KB.');input.value='';return;}const reader=new FileReader();reader.onload=()=>{const target=document.getElementById(targetId);if(target)target.value=String(reader.result||'')};reader.onerror=()=>alert('Não foi possível ler a imagem.');reader.readAsDataURL(file)};
   function client() { return window.tnSupabase || null; }
   function me() { return window.currentUser || (typeof currentUser !== 'undefined' ? currentUser : null); }
+  async function waitForAuth() { try { if (window.tnAuthReady) await window.tnAuthReady; } catch (e) { console.warn('[TN community auth]', e); } return me(); }
   function goPage(id) { if (typeof go === 'function') go(id); }
   function getRecipes() { try { return typeof recipes !== 'undefined' && Array.isArray(recipes) ? recipes : []; } catch (_) { return []; } }
 
@@ -67,7 +68,7 @@
     const box=document.getElementById('communityContent'); if(!box)return;
     box.innerHTML='<div class="community-empty">Buscando pessoas…</div>';
     try {
-      const user=me(); const term=document.getElementById('communitySearch')?.value.trim()||'';
+      const user=await waitForAuth(); const term=document.getElementById('communitySearch')?.value.trim()||'';
       const people=(await listProfiles(term)).filter(p=>p.id!==(user?.id));
       const c=client(); let followed=new Set();
       if(user?.id){const {data,error}=await c.from('user_follows').select('following_id').eq('follower_id',user.id);if(error)throw error;followed=new Set((data||[]).map(x=>x.following_id));}
@@ -104,16 +105,20 @@
   window.tnCommunityLoad = function(){ensurePages();window.tnCommunityTab('people');};
   window.tnCommunitySearch = function(){const active=document.querySelector('.community-tabs button.active')?.id||'';window.tnCommunityTab(active.includes('Recipes')?'recipes':'people');};
   window.tnCommunityFollow = async function(id) {
-    const user=me(),c=client(); if(!user){if(typeof openAccount==='function')openAccount();return}
-    try{const {data,error}=await c.from('user_follows').select('following_id').eq('follower_id',user.id).eq('following_id',id).maybeSingle();if(error)throw error;
+    const user=await waitForAuth(),c=client();if(!user?.id){if(typeof openAccount==='function')openAccount();return}
+    if(!c){alert('Não foi possível conectar à comunidade. Confira a configuração do Supabase.');return}
+    if(String(user.id)===String(id)){alert('Você já está no seu próprio perfil.');return}
+    try{
+      const {data,error}=await c.from('user_follows').select('following_id').eq('follower_id',user.id).eq('following_id',id).maybeSingle();if(error)throw error;
       const res=data?await c.from('user_follows').delete().eq('follower_id',user.id).eq('following_id',id):await c.from('user_follows').insert({follower_id:user.id,following_id:id});
-      if(res.error)throw res.error; if(document.getElementById('page-community-profile')?.classList.contains('active'))await window.tnCommunityOpenProfile(id);else await renderPeople();
-    }catch(e){alert('Não foi possível atualizar o seguimento: '+e.message)}
+      if(res.error)throw res.error;
+      if(document.getElementById('page-community-profile')?.classList.contains('active'))await window.tnCommunityOpenProfile(id);else await renderPeople();
+    }catch(e){console.error('[TN follow]',e);alert('Não foi possível atualizar o seguimento. '+(e.message||'Verifique se o SQL atualizado da comunidade foi executado no Supabase.'))}
   };
   window.tnCommunityOpenProfile = async function(id) {
-    ensurePages(); const box=document.getElementById('communityProfileContent');box.innerHTML='<div class="community-empty">Carregando perfil…</div>';goPage('community-profile');
+    await waitForAuth();ensurePages(); const box=document.getElementById('communityProfileContent');box.innerHTML='<div class="community-empty">Carregando perfil…</div>';goPage('community-profile');
     try{
-      const c=client(),{data:p,error}=await c.from('profiles').select('id,display_name,bio,avatar_url,role').eq('id',id).single();if(error)throw error;
+      const c=client();if(!c)throw new Error('Supabase não está conectado.');const {data:p,error}=await c.from('profiles').select('id,display_name,bio,avatar_url,role').eq('id',id).maybeSingle();if(error)throw error;if(!p)throw new Error('Este perfil ainda não foi criado. Peça à pessoa para entrar novamente no aplicativo.');
       const n=await counts(id),user=me(),own=user?.id===id;let following=false;
       if(user&&!own){const f=await c.from('user_follows').select('following_id').eq('follower_id',user.id).eq('following_id',id).maybeSingle();if(f.error)throw f.error;following=!!f.data;}
       const postsQuery=c.from('community_recipes').select('id,title,category,description,image_url,created_at').eq('author_id',id);if(!own)postsQuery.eq('status','approved');const [posts,saves]=await Promise.all([postsQuery.order('created_at',{ascending:false}),own?c.from('user_recipe_collections').select('recipe_key,recipe_title,recipe_category,recipe_snapshot,is_favorite,is_saved').eq('user_id',id):Promise.resolve({data:[],error:null})]);
