@@ -53,8 +53,10 @@ function injectRecipeTools(id){
  const existing=$('tnRecipeTools');if(existing)existing.remove();
  const baseServings=Math.max(1,Number(r.servings)||4);
  const tools=document.createElement('div');tools.id='tnRecipeTools';tools.className='tn-enhanced-panel';
- tools.innerHTML='<h3>Personalize sua receita</h3><div class="tn-tool-row"><label for="tnServings">Porções</label><select id="tnServings">'+[1,2,3,4,5,6,8,10,12,16,20].map(n=>'<option value="'+n+'" '+(n===baseServings?'selected':'')+'>'+n+'</option>').join('')+'</select><button class="btn btn-light" onclick="tnStartCooking('+JSON.stringify(String(r.id))+')">▶ Modo cozinha</button><button class="btn btn-light" onclick="tnAddPlan('+JSON.stringify(String(r.id))+')">＋ Planejar</button></div><div id="tnScaledIngredients"></div>';
+ tools.innerHTML='<h3>Personalize sua receita</h3><div class="tn-tool-row"><label for="tnServings">Porções</label><select id="tnServings">'+[1,2,3,4,5,6,8,10,12,16,20].map(n=>'<option value="'+n+'" '+(n===baseServings?'selected':'')+'>'+n+'</option>').join('')+'</select><button type="button" class="btn btn-light" id="tnCookButton">▶ Modo cozinha</button><button type="button" class="btn btn-light" id="tnPlanButton">＋ Planejar</button></div><div id="tnScaledIngredients"></div>';
  info.insertBefore(tools,info.querySelector('.notice')||null);
+ tools.querySelector('#tnCookButton').addEventListener('click',()=>window.tnStartCooking(String(r.id)));
+ tools.querySelector('#tnPlanButton').addEventListener('click',()=>window.tnAddPlan(String(r.id)));
  const list=tools.querySelector('#tnScaledIngredients');
  const source=Array.isArray(r.ingredients)?r.ingredients:[];
  function renderScaled(){const factor=Number($('tnServings')?.value||baseServings)/baseServings;list.innerHTML='<b>Ingredientes (marque os que já separou)</b>'+source.map((item,i)=>'<label class="tn-ingredient-line" id="tn-ing-row-'+i+'"><input type="checkbox" onchange="this.parentElement.classList.toggle(\'checked\',this.checked)"><span>'+escHtml(scaleText(item,factor))+'</span></label>').join('');}
