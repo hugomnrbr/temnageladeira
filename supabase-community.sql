@@ -196,4 +196,42 @@ grant select on public.recipe_feedback,public.recipe_comments to anon,authentica
 grant insert,update,delete on public.recipe_feedback to authenticated;
 grant insert,delete on public.recipe_comments to authenticated;
 
+
+-- Garante que toda conta autenticada tenha um perfil público consultável.
+create or replace function public.tn_community_create_profile()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $
+begin
+  insert into public.profiles (id, display_name, role, creator_status)
+  values (
+    new.id,
+    coalesce(nullif(trim(new.raw_user_meta_data->>'display_name'), ''), split_part(coalesce(new.email,''), '@', 1), 'Usuário'),
+    'user',
+    'none'
+  )
+  on conflict (id) do nothing;
+  return new;
+end;
+$;
+drop trigger if exists tn_community_profile_on_signup on auth.users;
+create trigger tn_community_profile_on_signup
+after insert on auth.users
+for each row execute function public.tn_community_create_profile();
+
+-- Recupera contas já cadastradas que ainda não possuem perfil.
+insert into public.profiles (id, display_name, role, creator_status)
+select u.id,
+       coalesce(nullif(trim(u.raw_user_meta_data->>'display_name'), ''), split_part(coalesce(u.email,''), '@', 1), 'Usuário'),
+       'user',
+       'none'
+from auth.users u
+left join public.profiles p on p.id=u.id
+where p.id is null
+on conflict (id) do nothing;
+
+grant select on public.profiles to anon, authenticated;
+
 commit;
