@@ -52,17 +52,35 @@ function injectRecipeTools(id){
  const info=detail.querySelector('.detail-info');if(!info)return;
  const existing=$('tnRecipeTools');if(existing)existing.remove();
  const baseServings=Math.max(1,Number(r.servings)||4);
+ const servingOptions=[...new Set([baseServings,...[1,2,3,4,5,6,8,10,12,16,20,24,30]])].sort((a,b)=>a-b);
  const tools=document.createElement('div');tools.id='tnRecipeTools';tools.className='tn-enhanced-panel';
- tools.innerHTML='<h3>Personalize sua receita</h3><div class="tn-tool-row"><label for="tnServings">Porções</label><select id="tnServings">'+[1,2,3,4,5,6,8,10,12,16,20].map(n=>'<option value="'+n+'" '+(n===baseServings?'selected':'')+'>'+n+'</option>').join('')+'</select><button type="button" class="btn btn-light" id="tnCookButton">▶ Modo cozinha</button><button type="button" class="btn btn-light" id="tnPlanButton">＋ Planejar</button></div><div id="tnScaledIngredients"></div>';
+ tools.innerHTML='<h3>Personalize sua receita</h3><div class="tn-tool-row"><label for="tnServings">Porções</label><select id="tnServings">'+servingOptions.map(n=>'<option value="'+n+'" '+(n===baseServings?'selected':'')+'>'+n+'</option>').join('')+'</select><button type="button" class="btn btn-light" id="tnCookButton">▶ Modo cozinha</button><button type="button" class="btn btn-light" id="tnPlanButton">＋ Planejar</button></div><p class="small muted">As quantidades são calculadas com base nas '+baseServings+' porções originais da receita.</p><div id="tnScaledIngredients"></div>';
  info.insertBefore(tools,info.querySelector('.notice')||null);
- tools.querySelector('#tnCookButton').addEventListener('click',()=>window.tnStartCooking(String(r.id)));
- tools.querySelector('#tnPlanButton').addEventListener('click',()=>window.tnAddPlan(String(r.id)));
+ const selectedServings=()=>Math.max(1,Number(tools.querySelector('#tnServings').value)||baseServings);
+ tools.querySelector('#tnCookButton').addEventListener('click',()=>window.tnStartCooking(String(r.id),selectedServings()));
+ tools.querySelector('#tnPlanButton').addEventListener('click',()=>window.tnAddPlan(String(r.id),selectedServings()));
  const list=tools.querySelector('#tnScaledIngredients');
  const source=Array.isArray(r.ingredients)?r.ingredients:[];
- function renderScaled(){const factor=Number($('tnServings')?.value||baseServings)/baseServings;list.innerHTML='<b>Ingredientes (marque os que já separou)</b>'+source.map((item,i)=>'<label class="tn-ingredient-line" id="tn-ing-row-'+i+'"><input type="checkbox" onchange="this.parentElement.classList.toggle(\'checked\',this.checked)"><span>'+escHtml(scaleText(item,factor))+'</span></label>').join('');}
- $('tnServings').onchange=renderScaled;renderScaled();
+ function renderScaled(){const factor=selectedServings()/baseServings;list.innerHTML='<b>Ingredientes (marque os que já separou)</b>'+source.map((item,i)=>'<label class="tn-ingredient-line" id="tn-ing-row-'+i+'"><input type="checkbox" onchange="this.parentElement.classList.toggle(\'checked\',this.checked)"><span>'+escHtml(scaleText(item,factor))+'</span></label>').join('');}
+ tools.querySelector('#tnServings').addEventListener('change',renderScaled);renderScaled();
 }
-function scaleText(text,factor){if(factor===1)return text;return String(text).replace(/(^|\s)(\d+\s*\/\s*\d+|\d+(?:[.,]\d+)?)(?=\s|$)/g,(m,p,n)=>{const bits=n.split('/');const amount=bits.length===2?Number(bits[0].trim())/Number(bits[1].trim()):Number(n.replace(',','.'));const v=amount*factor;return p+(Number.isInteger(v)?String(v):Number(v.toFixed(2)).toString().replace('.',','))});}
+function tnReadLeadingQuantity(value){
+ const match=String(value??'').trim().match(/^(\d+\s+\d+\s*\/\s*\d+|\d+\s*\/\s*\d+|\d+(?:[.,]\d+)?)(?=\s|$)/);
+ if(!match)return null;
+ const raw=match[1].trim(),parts=raw.match(/\d+/g);
+ const amount=raw.includes('/')?(parts.length===3?Number(parts[0])+Number(parts[1])/Number(parts[2]):Number(parts[0])/Number(parts[1])):Number(raw.replace(',','.'));
+ return Number.isFinite(amount)?{amount,raw}:null;
+}
+function tnFormatQuantity(value){
+ if(Math.abs(value-Math.round(value))<0.000001)return String(Math.round(value));
+ return Number(value.toFixed(3)).toString().replace('.',',');
+}
+function scaleText(text,factor){
+ const parsed=tnReadLeadingQuantity(text);
+ if(!parsed||factor===1)return String(text);
+ const original=String(text).trim();
+ return tnFormatQuantity(parsed.amount*factor)+original.slice(parsed.raw.length);
+}
 window.tnAddPlan=function(id){addPage();const p=loadPlan();p.days=p.days||{};const key=['mon','tue','wed','thu','fri','sat','sun'].find(k=>!p.days[k])||'mon';p.days[key]=String(id);savePlan(p);go('planner');renderPlanner();};
 let cookState={steps:[],index:0,title:''};
 window.tnStartCooking=function(id){const r=getRecipes().find(x=>String(x.id)===String(id));if(!r)return;cookState={steps:r.steps||[],index:0,title:r.name};showCook();};
@@ -110,11 +128,11 @@ const tnPlanDays=[['mon','Segunda'],['tue','Terça'],['wed','Quarta'],['thu','Qu
 const tnRecipeHasMeasures=r=>Array.isArray(r?.ingredients)&&r.ingredients.length>=2&&!r.ingredients.some(x=>/ingrediente principal|conforme a receita|recheio escolhido|folhas ou vegetais|base de massa|outras frutas disponíveis|quantidade desejada/i.test(String(x)))&&r.ingredients.every(x=>/\d/.test(String(x))||/a gosto|pitada|para untar|para finalizar|para servir|óleo para fritar|água para cozinhar/i.test(String(x)));
 const tnReadPlanV2=()=>{let p=loadPlan();if(!p||typeof p!=='object')p={week:weekStart(),days:{}};p.days=p.days&&typeof p.days==='object'?p.days:{};const days={};Object.entries(p.days).forEach(([d,v])=>{if(typeof v==='string'||typeof v==='number'){if(String(v))days[d]={lunch:{recipeId:String(v),servings:2}};}else if(v&&typeof v==='object'){const row={};Object.entries(v).forEach(([m,x])=>{if(typeof x==='string'||typeof x==='number'){if(String(x))row[m]={recipeId:String(x),servings:2};}else if(x&&(x.recipeId||x.id))row[m]={recipeId:String(x.recipeId||x.id),servings:Math.max(1,Math.min(20,Number(x.servings)||2))};});if(Object.keys(row).length)days[d]=row;}});p.days=days;p.week=p.week||weekStart();return p;};
 window.renderPlanner=function(){const host=$('tnPlannerContent');if(!host)return;const p=tnReadPlanV2(),rs=getRecipes().filter(tnRecipeHasMeasures),opts='<option value="">— Não planejado —</option>'+rs.map(r=>'<option value="'+escHtml(r.id)+'">'+escHtml(r.name)+'</option>').join('');host.innerHTML='<div class="tn-enhanced-panel"><div class="tn-tool-row"><div><b>Planeje sua semana</b><div class="small muted">Escolha receitas por refeição e ajuste as porções.</div></div><button class="btn btn-light" onclick="tnPlannerShare()">Compartilhar</button><button class="btn btn-primary" onclick="tnPlannerShopping()">Gerar lista de compras</button></div><div class="tn-plan-grid tn-plan-grid-v2">'+tnPlanDays.map(([d,label])=>'<section class="tn-plan-day"><h3>'+label+'</h3>'+tnMealSlots.map(([m,ml])=>'<label class="tn-plan-slot"><span>'+ml+'</span><select aria-label="'+label+' '+ml+'" onchange="tnPlannerSet(\''+d+'\',\''+m+'\',this.value)">'+opts+'</select><span class="small muted">Porções</span><input type="number" min="1" max="20" value="'+(Number(p.days[d]?.[m]?.servings)||2)+'" aria-label="Porções '+label+' '+ml+'" onchange="tnPlannerSetServings(\''+d+'\',\''+m+'\',this.value)"></label>').join('')+'</section>').join('')+'</div><p class="small muted">A lista soma ingredientes medidos e mantém os itens que você já adicionou.</p></div>';tnPlanDays.forEach(([d,label])=>tnMealSlots.forEach(([m,ml])=>{const s=host.querySelector('select[aria-label="'+label+' '+ml+'"]');if(s)s.value=p.days[d]?.[m]?.recipeId||'';}));};
-window.tnPlannerSet=async function(day,meal,id){if(arguments.length===2){id=meal;meal='lunch';}const p=tnReadPlanV2();p.days[day]=p.days[day]||{};if(id){p.days[day][meal]={recipeId:String(id),servings:Number(p.days[day][meal]?.servings)||2};}else{delete p.days[day][meal];if(!Object.keys(p.days[day]).length)delete p.days[day];}savePlan(p);renderPlanner();try{const c=db(),u=current();if(c&&u?.id){const {error}=await c.from('tn_weekly_plans').upsert({user_id:u.id,week_start:p.week,plan:p},{onConflict:'user_id,week_start'});if(error)console.warn('[TN planner]',error.message)}}catch(e){console.warn('[TN planner]',e.message)}};
+window.tnPlannerSet=async function(day,meal,id){if(arguments.length===2){id=meal;meal='lunch';}const p=tnReadPlanV2();p.days[day]=p.days[day]||{};if(id){p.days[day][meal]={recipeId:String(id),servings:Number(p.days[day][meal]?.servings)||Math.max(1,Number(getRecipes().find(x=>String(x.id)===String(id))?.servings)||2)};}else{delete p.days[day][meal];if(!Object.keys(p.days[day]).length)delete p.days[day];}savePlan(p);renderPlanner();try{const c=db(),u=current();if(c&&u?.id){const {error}=await c.from('tn_weekly_plans').upsert({user_id:u.id,week_start:p.week,plan:p},{onConflict:'user_id,week_start'});if(error)console.warn('[TN planner]',error.message)}}catch(e){console.warn('[TN planner]',e.message)}};
 window.tnPlannerSetServings=function(day,meal,value){const p=tnReadPlanV2();if(!p.days[day]?.[meal])return;p.days[day][meal].servings=Math.max(1,Math.min(20,parseInt(value,10)||2));savePlan(p);};
-const tnParseMeasuredLine=line=>{const raw=String(line||'').trim();const m=raw.match(/^(\d+(?:[.,]\d+)?|\d+\s*\/\s*\d+)\s*(kg|g|mg|l|ml|unidades?|unid\.?|ovos?|dentes?|colheres?(?:\s+de\s+(?:sopa|chá))?|xícaras?|xic(?:aras)?|fatias?|pacotes?|latas?|pães?)?\s*(.*)$/i);if(!m||!m[3].trim())return null;const q=m[1].includes('/')?Number(m[1].split('/')[0])/Number(m[1].split('/')[1]):Number(m[1].replace(',','.'));if(!q||!Number.isFinite(q))return null;let unit=(m[2]||'unidade').toLowerCase().replace(/s$/,'');let name=m[3].replace(/\([^)]*\)/g,' ').replace(/^\s*(?:de|do|da|dos|das)\s+/i,'').replace(/[,\s]+$/,'').trim();return name?{name,quantity:q,unit}:null;};
+const tnParseMeasuredLine=line=>{const raw=String(line||'').trim();const m=raw.match(/^(\d+\s+\d+\s*\/\s*\d+|\d+\s*\/\s*\d+|\d+(?:[.,]\d+)?)\s*(kg|g|mg|l|ml|unidades?|unid\.?|ovos?|dentes?|colheres?(?:\s+de\s+(?:sopa|chá))?|xícaras?|xic(?:aras)?|fatias?|pacotes?|latas?|pães?)?\s*(.*)$/i);if(!m||!m[3].trim())return null;const parts=m[1].match(/\d+/g);const q=m[1].includes('/')?(parts.length===3?Number(parts[0])+Number(parts[1])/Number(parts[2]):Number(parts[0])/Number(parts[1])):Number(m[1].replace(',','.'));if(!q||!Number.isFinite(q))return null;let unit=(m[2]||'unidade').toLowerCase().replace(/s$/,'');let name=m[3].replace(/\([^)]*\)/g,' ').replace(/^\s*(?:de|do|da|dos|das)\s+/i,'').replace(/[,\s]+$/,'').trim();return name?{name,quantity:q,unit}:null;};
 const tnShoppingNorm=s=>norm(String(s||'').replace(/\([^)]*\)/g,' ').replace(/\b(cru|crua|cozido|cozida|picado|picada|ralado|ralada|descascado|descascada)\b/gi,'').replace(/^\s*(?:de|do|da|dos|das)\s+/i,'').trim());
-window.tnPlannerShopping=function(){const p=tnReadPlanV2(),rs=getRecipes().filter(tnRecipeHasMeasures),map=new Map();Object.values(p.days||{}).forEach(meals=>Object.values(meals||{}).forEach(entry=>{const r=rs.find(x=>String(x.id)===String(entry.recipeId));if(!r)return;const scale=(Number(entry.servings)||2)/(Number(r.servings)||2);(r.ingredients||[]).forEach(line=>{const x=tnParseMeasuredLine(line);if(!x)return;const key=tnShoppingNorm(x.name)+'|'+x.unit;if(!map.has(key))map.set(key,{name:x.name,quantity:0,unit:x.unit,done:false,recipe:r.name,recipeId:r.id,source:'planner'});const item=map.get(key);item.quantity+=x.quantity*scale;if(!String(item.recipe).split(', ').includes(r.name))item.recipe+=', '+r.name;} );}));const list=safeRead('tn_shopping',[]).filter(x=>x.source!=='planner');map.forEach(x=>{const i=list.findIndex(y=>tnShoppingNorm(y.name)===tnShoppingNorm(x.name)&&String(y.unit||'unidade')===x.unit);if(i<0)list.push(x);else if(list[i].source==='planner'){list[i].quantity=Number(list[i].quantity||0)+x.quantity;list[i].done=false;list[i].recipe=[...new Set(String(list[i].recipe||'').split(', ').concat(x.recipe.split(', ')))].join(', ');}else list.push(x);});safeWrite('tn_shopping',list);if(typeof go==='function')go('shopping');if(typeof renderShopping==='function')renderShopping();};
+window.tnPlannerShopping=function(){const p=tnReadPlanV2(),rs=getRecipes().filter(tnRecipeHasMeasures),map=new Map();Object.values(p.days||{}).forEach(meals=>Object.values(meals||{}).forEach(entry=>{const r=rs.find(x=>String(x.id)===String(entry.recipeId));if(!r)return;const scale=(Number(entry.servings)||Number(r.servings)||2)/(Number(r.servings)||2);(r.ingredients||[]).forEach(line=>{const x=tnParseMeasuredLine(line);if(!x)return;const key=tnShoppingNorm(x.name)+'|'+x.unit;if(!map.has(key))map.set(key,{name:x.name,quantity:0,unit:x.unit,done:false,recipe:r.name,recipeId:r.id,source:'planner'});const item=map.get(key);item.quantity+=x.quantity*scale;if(!String(item.recipe).split(', ').includes(r.name))item.recipe+=', '+r.name;} );}));const list=safeRead('tn_shopping',[]).filter(x=>x.source!=='planner');map.forEach(x=>{const i=list.findIndex(y=>tnShoppingNorm(y.name)===tnShoppingNorm(x.name)&&String(y.unit||'unidade')===x.unit);if(i<0)list.push(x);else if(list[i].source==='planner'){list[i].quantity=Number(list[i].quantity||0)+x.quantity;list[i].done=false;list[i].recipe=[...new Set(String(list[i].recipe||'').split(', ').concat(x.recipe.split(', ')))].join(', ');}else list.push(x);});safeWrite('tn_shopping',list);if(typeof go==='function')go('shopping');if(typeof renderShopping==='function')renderShopping();};
 
 
 /* Ajustes finais da lista: evita barra duplicada, permite editar quantidade e remover itens. */
@@ -125,10 +143,12 @@ window.renderShopping=function(){const host=$('shoppingItems');if(host){const ol
 const tnV2Style=document.createElement('style');tnV2Style.textContent='.tn-plan-grid-v2{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr));gap:14px;margin-top:14px}.tn-plan-grid-v2 .tn-plan-day{min-width:0;padding:14px;border:1px solid var(--border,#e7e3dc);border-radius:14px;background:var(--card,#fff)}.tn-plan-grid-v2 .tn-plan-day h3{margin:0 0 12px}.tn-plan-slot{display:grid;grid-template-columns:1fr;gap:5px;margin:12px 0}.tn-plan-slot select,.tn-plan-slot input{width:100%;min-width:0;box-sizing:border-box}.tn-plan-slot>span:first-child{font-weight:600}.tn-plan-slot input[type=number]{max-width:100px}.tn-shopping-edit-v2 input{padding:5px;border:1px solid #d8d5cf;border-radius:8px}@media(max-width:600px){.tn-plan-grid-v2{grid-template-columns:1fr}.tn-plan-grid-v2 .tn-plan-day{padding:12px}.tn-plan-slot{margin:10px 0}}';document.head.appendChild(tnV2Style);
 
 /* Correção de compatibilidade: ações dos botões da receita e plano semanal V2. */
-window.tnStartCooking=function(id){
+window.tnStartCooking=function(id,requestedServings){
  const r=getRecipes().find(x=>String(x.id)===String(id));
  if(!r){alert('Não foi possível localizar esta receita. Atualize a página e tente novamente.');return;}
  const steps=Array.isArray(r.steps)?r.steps.filter(x=>String(x||'').trim()):[];
+ const baseServings=Math.max(1,Number(r.servings)||4),servings=Math.max(1,Number(requestedServings)||baseServings),factor=servings/baseServings;
+ const ingredients=Array.isArray(r.ingredients)?r.ingredients:[];
  let index=0;
  let overlay=$('tnCookOverlay');
  if(!overlay){overlay=document.createElement('div');overlay.id='tnCookOverlay';overlay.className='tn-cook-overlay';document.body.appendChild(overlay);}
@@ -138,6 +158,8 @@ window.tnStartCooking=function(id){
   const close=document.createElement('button');close.type='button';close.textContent='✕ Fechar';close.style.alignSelf='flex-end';close.onclick=()=>overlay.remove();overlay.appendChild(close);
   const progress=document.createElement('p');progress.textContent=total?'ETAPA '+(index+1)+' DE '+total:'MODO COZINHA';overlay.appendChild(progress);
   const title=document.createElement('h1');title.textContent=r.name||'Preparar receita';overlay.appendChild(title);
+  const portion=document.createElement('p');portion.textContent='Rendimento: '+servings+' porções';overlay.appendChild(portion);
+  if(ingredients.length){const heading=document.createElement('h2');heading.textContent='Ingredientes';overlay.appendChild(heading);const ingredientList=document.createElement('ul');ingredients.forEach(item=>{const li=document.createElement('li');li.textContent=scaleText(item,factor);ingredientList.appendChild(li)});overlay.appendChild(ingredientList);}
   const step=document.createElement('div');step.className='tn-cook-step';step.textContent=total?steps[index]:'Esta receita ainda não possui etapas de preparo cadastradas.';overlay.appendChild(step);
   const controls=document.createElement('div');controls.className='tn-cook-controls';
   const prev=document.createElement('button');prev.type='button';prev.textContent='← Anterior';prev.disabled=index===0;prev.onclick=()=>{index=Math.max(0,index-1);render();};
@@ -146,7 +168,7 @@ window.tnStartCooking=function(id){
  };
  render();
 };
-window.tnAddPlan=function(id){
+window.tnAddPlan=function(id,requestedServings){
  const recipe=getRecipes().find(x=>String(x.id)===String(id));
  if(!recipe){alert('Não foi possível localizar esta receita. Atualize a página e tente novamente.');return;}
  addPage();
@@ -160,7 +182,7 @@ window.tnAddPlan=function(id){
  }
  if(!target)target={day:'mon',meal:'lunch'};
  p.days[target.day]=p.days[target.day]||{};
- p.days[target.day][target.meal]={recipeId:String(recipe.id),servings:Math.max(1,Number(recipe.servings)||2)};
+ p.days[target.day][target.meal]={recipeId:String(recipe.id),servings:Math.max(1,Math.min(30,Number(requestedServings)||Number(recipe.servings)||2))};
  savePlan(p);
  go('planner');
  window.renderPlanner();
