@@ -53,7 +53,7 @@ function injectRecipeTools(id){
  const existing=$('tnRecipeTools');if(existing)existing.remove();
  const baseServings=Math.max(1,Number(r.servings)||4);
  const tools=document.createElement('div');tools.id='tnRecipeTools';tools.className='tn-enhanced-panel';
- tools.innerHTML='<h3>Personalize sua receita</h3><div class="tn-tool-row"><label for="tnServings">Porções</label><select id="tnServings">'+[1,2,3,4,5,6,8,10,12,16,20].map(n=>'<option value="'+n+'" '+(n===baseServings?'selected':'')+'>'+n+'</option>').join('')+'</select><button class="btn btn-light" onclick="tnStartCooking('+Number(r.id)+')">▶ Modo cozinha</button><button class="btn btn-light" onclick="tnAddPlan('+Number(r.id)+')">＋ Planejar</button></div><div id="tnScaledIngredients"></div>';
+ tools.innerHTML='<h3>Personalize sua receita</h3><div class="tn-tool-row"><label for="tnServings">Porções</label><select id="tnServings">'+[1,2,3,4,5,6,8,10,12,16,20].map(n=>'<option value="'+n+'" '+(n===baseServings?'selected':'')+'>'+n+'</option>').join('')+'</select><button class="btn btn-light" onclick="tnStartCooking('+JSON.stringify(String(r.id))+')">▶ Modo cozinha</button><button class="btn btn-light" onclick="tnAddPlan('+JSON.stringify(String(r.id))+')">＋ Planejar</button></div><div id="tnScaledIngredients"></div>';
  info.insertBefore(tools,info.querySelector('.notice')||null);
  const list=tools.querySelector('#tnScaledIngredients');
  const source=Array.isArray(r.ingredients)?r.ingredients:[];
