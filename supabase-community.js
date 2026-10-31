@@ -171,13 +171,13 @@
   window.tnCommunityRefreshFavoriteButton = async function(id){
     const u=me(),c=client();if(!u?.id||!c)return;
     try{const q=await c.from('user_recipe_collections').select('is_favorite').eq('user_id',u.id).eq('recipe_key',String(id)).maybeSingle();if(q.error)throw q.error;
-      const btn=document.querySelector('#detailContent .detail-info > button.btn.full');if(!btn)return;const fav=!!q.data?.is_favorite;
+      const btn=document.querySelector('#detailContent .detail-info > button.btn.full');if(!btn)return;const fav=!!q.data?.is_favorite;try{if(typeof favorites!=='undefined'){if(fav)favorites.add(Number(id));else favorites.delete(Number(id));localStorage.setItem('tn_favs',JSON.stringify([...favorites]));}}catch(_){}
       btn.classList.toggle('btn-orange',fav);btn.classList.toggle('btn-light',!fav);btn.textContent=fav?'♥ Salvo nas favoritas':'♡ Adicionar aos favoritos';
     }catch(e){console.warn('[TN favorite state]',e.message);}
   };
   window.tnCommunityRemoveFavorite = async function(key){
     const u=me(),c=client();if(!u?.id||!c){alert('Entre na sua conta para alterar suas favoritas.');return;}
-    try{const q=await c.from('user_recipe_collections').update({is_favorite:false,updated_at:new Date().toISOString()}).eq('user_id',u.id).eq('recipe_key',String(key));if(q.error)throw q.error;await window.tnCommunityOpenProfile(u.id);}
+    try{const q=await c.from('user_recipe_collections').update({is_favorite:false,updated_at:new Date().toISOString()}).eq('user_id',u.id).eq('recipe_key',String(key));if(q.error)throw q.error;try{if(typeof favorites!=='undefined'){favorites.delete(Number(key));localStorage.setItem('tn_favs',JSON.stringify([...favorites]));}}catch(_){}await window.tnCommunityOpenProfile(u.id);}
     catch(e){alert('Não foi possível remover dos favoritos: '+e.message);}
   };
   window.tnCommunityToggleFavoriteList = function(){const box=document.getElementById('tnProfileFavoriteScroll'),btn=document.getElementById('tnProfileFavoriteMore');if(!box||!btn)return;const expanded=box.classList.toggle('expanded');btn.textContent=expanded?'Mostrar menos':'Ver mais receitas';};
@@ -276,7 +276,7 @@
     try{const res=await c.from('recipe_comments').insert({recipe_key:String(id),user_id:u.id,display_name:u.name||u.email||'Usuário',body});if(res.error)throw res.error;await tnRefreshRecipeSocial(id);}
     catch(e){alert('Não foi possível publicar o comentário: '+e.message);if(btn){btn.disabled=false;btn.textContent='Comentar';}}
   };
-  window.addEventListener('load',()=>{const original=window.openRecipe;if(typeof original==='function'&&!window.__tnSocialOpenWrapped){window.openRecipe=function(id){const result=original.apply(this,arguments);if(client())tnRefreshRecipeSocial(id).catch(e=>console.warn('[TN social]',e.message));return result;};window.__tnSocialOpenWrapped=true;}});
+  window.addEventListener('load',()=>{const original=window.openRecipe;if(typeof original==='function'&&!window.__tnSocialOpenWrapped){window.openRecipe=function(id){const result=original.apply(this,arguments);if(client()){tnRefreshRecipeSocial(id).catch(e=>console.warn('[TN social]',e.message));if(window.tnCommunityRefreshFavoriteButton)window.tnCommunityRefreshFavoriteButton(id);}return result;};window.__tnSocialOpenWrapped=true;}});
 
   window.addEventListener('load',()=>{ensurePages();setTimeout(()=>{if(typeof window.tnAuthReady!=='undefined')window.tnAuthReady.then(()=>{const u=me();if(u&&client())syncFavorites(u).catch(()=>{});});},300)});
   async function syncFavorites(u){
