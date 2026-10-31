@@ -13,7 +13,6 @@
     .community-stat-link{border:0;background:transparent;color:inherit;padding:0 4px;display:flex;flex-direction:column;align-items:center;cursor:pointer;font:inherit}.community-stat-link span{text-decoration:underline;text-underline-offset:3px}
     .tn-follow-overlay{display:none;position:fixed;inset:0;z-index:99999;background:#0008;align-items:center;justify-content:center;padding:16px}.tn-follow-overlay.open{display:flex}.tn-follow-dialog{width:min(100%,430px);max-height:80vh;background:#fff;border-radius:20px;padding:18px;display:flex;flex-direction:column}.tn-follow-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}.tn-follow-header h2{margin:0;font-size:20px}.tn-follow-header button{border:0;border-radius:50%;width:34px;height:34px;font-size:23px;background:#f1f5ef}.tn-follow-search{width:100%;padding:12px;border:1px solid #dfe7de;border-radius:12px;margin-bottom:12px;font:inherit}.tn-follow-list{overflow:auto;min-height:80px}.tn-follow-person{display:flex;align-items:center;gap:11px;padding:10px 2px;border-bottom:1px solid #edf1e9}.tn-follow-person[hidden]{display:none}.tn-follow-person .community-avatar{width:46px;height:46px;flex:0 0 46px;margin:0}.tn-follow-person-info{min-width:0;flex:1;display:flex;flex-direction:column;gap:3px}.tn-follow-person-info b{overflow-wrap:anywhere}.tn-follow-person-info small{color:#718078;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.tn-follow-action{border:0;border-radius:20px;background:#07833f;color:#fff;padding:8px 13px;font-weight:700;white-space:nowrap}
   `;
-  `;
   document.head.appendChild(style);
 
   function inlineArg(v) { return "'" + String(v ?? '').replace(/\\/g, '\\\\').replace(/'/g, "\\'") + "'"; }
@@ -149,6 +148,13 @@
   window.tnCommunityFilterFollowList=function(){const q=(document.getElementById('tnFollowSearch')?.value||'').toLocaleLowerCase('pt-BR');document.querySelectorAll('#tnFollowListBody .tn-follow-person').forEach(el=>{el.hidden=!el.textContent.toLocaleLowerCase('pt-BR').includes(q);});};
   window.tnCommunityCloseFollowList=function(){document.getElementById('tnFollowListModal')?.classList.remove('open');};
   window.tnCommunityFollowFromList=async function(id){const modal=document.getElementById('tnFollowListModal');await window.tnCommunityFollow(id);if(modal?.classList.contains('open'))await window.tnCommunityShowFollowList(modal.dataset.userId,modal.dataset.mode);};
+  window.tnCommunityOpenMyProfile = async function() {
+    try {
+      const user=await waitForAuth();
+      if(!user?.id){if(typeof window.openAccount==='function')window.openAccount();else alert('Entre na sua conta para abrir seu perfil.');return;}
+      await window.tnCommunityOpenProfile(user.id);
+    } catch(e) { console.error('[TN community] profile shortcut:',e); alert('Não foi possível abrir seu perfil agora.'); }
+  };
   window.tnCommunityOpenProfile = async function(id) {
     await waitForAuth();ensurePages(); const box=document.getElementById('communityProfileContent');box.innerHTML='<div class="community-empty">Carregando perfil…</div>';goPage('community-profile');
     try{
