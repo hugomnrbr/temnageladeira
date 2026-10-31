@@ -401,4 +401,62 @@ renderHome();renderIngredients();renderSearchCategories();renderSearch();updateA
   .recipe-card .social-actions,.recipe-card .card-actions{justify-content:center!important;flex-wrap:wrap!important}
 }
 </style>
+
+<style id="favorites-mobile-layout-fix">
+/* Favoritos: lista isolada, sem sobreposição entre cards */
+#page-favorites #favoriteCards{
+  display:flex!important;flex-direction:column!important;align-items:stretch!important;
+  gap:14px!important;width:100%!important;min-width:0!important;
+}
+#page-favorites .saved-tools{
+  display:flex!important;position:sticky!important;top:0!important;z-index:5!important;
+  align-items:center!important;gap:10px!important;flex-wrap:wrap!important;
+  width:100%!important;padding:8px 0!important;margin:8px 0 12px!important;
+  background:var(--cream)!important;
+}
+#page-favorites .saved-tools input{flex:1 1 180px!important;min-width:0!important;width:100%!important;}
+#page-favorites .saved-scroll{
+  display:flex!important;flex-direction:column!important;align-items:stretch!important;
+  gap:14px!important;width:100%!important;min-width:0!important;
+  max-height:62vh!important;overflow-y:auto!important;overflow-x:hidden!important;
+  padding:2px 5px 14px 2px!important;overscroll-behavior:contain!important;
+}
+#page-favorites #savedScroll>.recipe-card{
+  display:flex!important;flex:0 0 auto!important;flex-direction:column!important;
+  position:relative!important;align-self:stretch!important;
+  width:100%!important;min-width:0!important;max-width:none!important;
+  height:auto!important;min-height:0!important;margin:0!important;
+  overflow:hidden!important;transform:none!important;
+}
+#page-favorites #savedScroll>.recipe-card>.food-photo{
+  display:flex!important;position:relative!important;flex:0 0 190px!important;
+  width:100%!important;height:190px!important;min-height:190px!important;max-height:190px!important;
+  margin:0!important;padding:0!important;overflow:visible!important;
+  align-items:center!important;justify-content:center!important;
+  border-radius:17px 17px 0 0!important;
+}
+#page-favorites #savedScroll>.recipe-card>.food-photo>.recipe-photo,
+#page-favorites #savedScroll>.recipe-card>.food-photo>img.recipe-photo{
+  position:absolute!important;inset:0!important;display:block!important;
+  width:100%!important;height:100%!important;max-width:none!important;max-height:none!important;
+  object-fit:cover!important;border-radius:17px 17px 0 0!important;
+}
+#page-favorites #savedScroll>.recipe-card>.food-photo>.recipe-creator-badge{
+  position:absolute!important;left:50%!important;bottom:-28px!important;
+  transform:translateX(-50%)!important;z-index:4!important;
+}
+#page-favorites #savedScroll>.recipe-card>.card-body{
+  display:block!important;position:relative!important;z-index:1!important;
+  width:100%!important;min-width:0!important;height:auto!important;
+  padding:38px 14px 15px!important;text-align:center!important;
+}
+#page-favorites #savedScroll>.recipe-card .meta,
+#page-favorites #savedScroll>.recipe-card .social-actions,
+#page-favorites #savedScroll>.recipe-card .card-actions{justify-content:center!important;flex-wrap:wrap!important;}
+#page-favorites #savedScroll>.recipe-card .card-body h3{overflow-wrap:anywhere!important;}
+@media(min-width:701px){
+ #page-favorites #savedScroll{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;}
+ #page-favorites #savedScroll>.recipe-card{width:100%!important;}
+}
+</style>
 </body></html>
