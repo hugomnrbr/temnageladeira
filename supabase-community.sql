@@ -171,14 +171,22 @@ create table if not exists public.recipe_feedback (
  created_at timestamptz not null default now(),
  primary key (recipe_key,user_id)
 );
+-- Compatibilidade com a tabela recipe_comments criada anteriormente por
+-- supabase-production.sql (que usa recipe_id e exige essa coluna).
+-- Mantém os comentários antigos e permite também comentários do catálogo via recipe_key.
 create table if not exists public.recipe_comments (
  id uuid primary key default gen_random_uuid(),
- recipe_key text not null,
+ recipe_key text,
  user_id uuid not null references auth.users(id) on delete cascade,
  display_name text not null default 'Usuário',
  body text not null check (char_length(body) between 1 and 500),
  created_at timestamptz not null default now()
 );
+alter table public.recipe_comments
+  add column if not exists recipe_key text,
+  add column if not exists display_name text not null default 'Usuário';
+alter table public.recipe_comments
+  alter column recipe_id drop not null;
 create index if not exists recipe_comments_recipe_idx on public.recipe_comments(recipe_key,created_at);
 alter table public.recipe_feedback enable row level security;
 alter table public.recipe_comments enable row level security;
