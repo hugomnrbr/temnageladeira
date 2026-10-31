@@ -341,20 +341,26 @@
     catch(e){alert('Não foi possível publicar o comentário: '+e.message);if(btn){btn.disabled=false;btn.textContent='Comentar';}}
   };
   window.tnRefreshVisibleRecipeCards=async function(onlyId){
-    const c=client();if(!c)return;const cards=[...document.querySelectorAll('[data-recipe-card]')].filter(el=>!onlyId||el.dataset.recipeCard===String(onlyId));
+    const c=client();if(!c)return;
+    const cards=[...document.querySelectorAll('[data-recipe-card]')].filter(el=>!onlyId||el.dataset.recipeCard===String(onlyId));
     const keys=[...new Set(cards.map(el=>el.dataset.recipeCard))];if(!keys.length)return;
-    const u=me();
-    const [v,r]=await Promise.all([c.from('recipe_feedback').select('recipe_key,user_id,vote').in('recipe_key',keys),c.from('recipe_ratings').select('recipe_key,user_id,rating').in('recipe_key',keys)]);
-    if(v.error||r.error)return;
+    const u=await waitForAuth();
+    // Carrega os votos primeiro; erro de estrelas nunca bloqueia gostei/deslike.
+    const v=await c.from('recipe_feedback').select('recipe_key,user_id,vote').in('recipe_key',keys);
+    if(v.error){console.warn('[TN votes] Não foi possível atualizar os votos dos cards.',v.error);return;}
     keys.forEach(key=>{
-      const vs=(v.data||[]).filter(x=>x.recipe_key===key),mine=u?.id?vs.find(x=>x.user_id===u.id):null;
-      const rs=(r.data||[]).filter(x=>x.recipe_key===key),avg=rs.length?rs.reduce((sum,x)=>sum+Number(x.rating),0)/rs.length:0;
+      const vs=(v.data||[]).filter(x=>String(x.recipe_key)===key),mine=u?.id?vs.find(x=>x.user_id===u.id):null;
       document.querySelectorAll('[data-recipe-card="'+CSS.escape(key)+'"]').forEach(el=>{
         const up=el.querySelector('[data-card-vote="up"]'),down=el.querySelector('[data-card-vote="down"]');
-        if(up){up.classList.toggle('active',mine?.vote==='up');up.querySelector('.vote-count').textContent=vs.filter(x=>x.vote==='up').length;}
-        if(down){down.classList.toggle('active',mine?.vote==='down');down.querySelector('.vote-count').textContent=vs.filter(x=>x.vote==='down').length;}
-        const rate=el.querySelector('[data-card-rating]');if(rate)rate.textContent='⭐ '+(rs.length?avg.toFixed(1):'Avaliar');
+        if(up){up.classList.toggle('active',mine?.vote==='up');const n=up.querySelector('.vote-count');if(n)n.textContent=vs.filter(x=>x.vote==='up').length;}
+        if(down){down.classList.toggle('active',mine?.vote==='down');const n=down.querySelector('.vote-count');if(n)n.textContent=vs.filter(x=>x.vote==='down').length;}
       });
+    });
+    const r=await c.from('recipe_ratings').select('recipe_key,user_id,rating').in('recipe_key',keys);
+    if(r.error){console.warn('[TN ratings] Avaliações dos cards indisponíveis; votos atualizados normalmente.',r.error);return;}
+    keys.forEach(key=>{
+      const rs=(r.data||[]).filter(x=>String(x.recipe_key)===key),avg=rs.length?rs.reduce((sum,x)=>sum+Number(x.rating),0)/rs.length:0;
+      document.querySelectorAll('[data-recipe-card="'+CSS.escape(key)+'"] [data-card-rating]').forEach(rate=>rate.textContent='⭐ '+(rs.length?avg.toFixed(1):'Avaliar'));
     });
   };
   window.addEventListener('load',()=>{
