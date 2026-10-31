@@ -116,6 +116,35 @@
       if(document.getElementById('page-community-profile')?.classList.contains('active'))await window.tnCommunityOpenProfile(id);else await renderPeople();
     }catch(e){console.error('[TN follow]',e);alert('Não foi possível atualizar o seguimento. '+(e.message||'Verifique se o SQL atualizado da comunidade foi executado no Supabase.'))}
   };
+
+  window.tnCommunityShowFollowList = async function(uid, mode) {
+    const c=client(); if(!c){alert('Supabase não está conectado.');return;}
+    const kind=mode==='followers'?'followers':'following';
+    let modal=document.getElementById('tnFollowListModal');
+    if(!modal){modal=document.createElement('div');modal.id='tnFollowListModal';modal.className='tn-follow-overlay';modal.innerHTML='<div class="tn-follow-dialog"><div class="tn-follow-header"><h2 id="tnFollowTitle"></h2><button type="button" onclick="tnCommunityCloseFollowList()">×</button></div><input id="tnFollowSearch" class="tn-follow-search" placeholder="Buscar pessoas..." oninput="tnCommunityFilterFollowList()"><div id="tnFollowListBody" class="tn-follow-list"></div></div>';document.body.appendChild(modal);modal.addEventListener('click',e=>{if(e.target===modal)tnCommunityCloseFollowList();});}
+    modal.dataset.userId=String(uid);modal.dataset.mode=kind;
+    document.getElementById('tnFollowTitle').textContent=kind==='followers'?'Seguidores':'Seguindo';
+    document.getElementById('tnFollowSearch').value='';
+    document.getElementById('tnFollowListBody').innerHTML='<div class="community-empty">Carregando pessoas…</div>';
+    modal.classList.add('open');
+    try {
+      const col=kind==='followers'?'follower_id':'following_id', filter=kind==='followers'?'following_id':'follower_id';
+      const links=await c.from('user_follows').select(col).eq(filter,uid);
+      if(links.error)throw links.error;
+      const ids=[...new Set((links.data||[]).map(x=>x[col]).filter(Boolean))];
+      if(!ids.length){document.getElementById('tnFollowListBody').innerHTML='<div class="community-empty">'+(kind==='followers'?'Ainda não há seguidores.':'Esta pessoa ainda não segue ninguém.')+'</div>';return;}
+      const result=await c.from('profiles').select('id,display_name,bio,avatar_url').in('id',ids);
+      if(result.error)throw result.error;
+      const byId=new Map((result.data||[]).map(p=>[p.id,p]));
+      const people=ids.map(id=>byId.get(id)).filter(Boolean);
+      const meUser=me(); let followed=new Set();
+      if(meUser?.id){const f=await c.from('user_follows').select('following_id').eq('follower_id',meUser.id);if(f.error)throw f.error;followed=new Set((f.data||[]).map(x=>x.following_id));}
+      document.getElementById('tnFollowListBody').innerHTML=people.map(p=>'<div class="tn-follow-person">'+avatar(p)+'<div class="tn-follow-person-info"><b>'+escHtml(p.display_name||'Usuário')+'</b><small>'+escHtml(p.bio||'')+'</small></div>'+(meUser?.id&&meUser.id!==p.id?'<button class="tn-follow-action" onclick="tnCommunityFollowFromList('+inlineArg(p.id)+')">'+(followed.has(p.id)?'Seguindo':'Seguir')+'</button>':'')+'</div>').join('')||'<div class="community-empty">Nenhum perfil encontrado.</div>';
+    } catch(e){document.getElementById('tnFollowListBody').innerHTML='<div class="community-empty">Não foi possível carregar a lista. '+escHtml(e.message)+'</div>';}
+  };
+  window.tnCommunityFilterFollowList=function(){const q=(document.getElementById('tnFollowSearch')?.value||'').toLocaleLowerCase('pt-BR');document.querySelectorAll('#tnFollowListBody .tn-follow-person').forEach(el=>{el.hidden=!el.textContent.toLocaleLowerCase('pt-BR').includes(q);});};
+  window.tnCommunityCloseFollowList=function(){document.getElementById('tnFollowListModal')?.classList.remove('open');};
+  window.tnCommunityFollowFromList=async function(id){const modal=document.getElementById('tnFollowListModal');await window.tnCommunityFollow(id);if(modal?.classList.contains('open'))await window.tnCommunityShowFollowList(modal.dataset.userId,modal.dataset.mode);};
   window.tnCommunityOpenProfile = async function(id) {
     await waitForAuth();ensurePages(); const box=document.getElementById('communityProfileContent');box.innerHTML='<div class="community-empty">Carregando perfil…</div>';goPage('community-profile');
     try{
