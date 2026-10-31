@@ -369,11 +369,20 @@
   });
   window.addEventListener('load',()=>{ensurePages();setTimeout(()=>{if(typeof window.tnAuthReady!=='undefined')window.tnAuthReady.then(()=>{const u=me();if(u&&client())syncFavorites(u).catch(()=>{});});},300)});
   async function syncFavorites(u){
-    const c=client();let ids=[];try{ids=typeof favorites!=='undefined'?[...favorites]:[]}catch(_){}
-    for(const id of ids){const r=getRecipes().find(x=>String(x.id)===String(id));if(!r)continue;
-      const {data}=await c.from('user_recipe_collections').select('recipe_key').eq('user_id',u.id).eq('recipe_key',String(id)).maybeSingle();
-      const payload={user_id:u.id,recipe_key:String(id),recipe_title:r.name||r.title||'Receita',recipe_category:r.category||'',recipe_snapshot:r,is_favorite:true,is_saved:true,updated_at:new Date().toISOString()};
-      if(data)await c.from('user_recipe_collections').update(payload).eq('user_id',u.id).eq('recipe_key',String(id));else await c.from('user_recipe_collections').insert(payload);
+    const c=client();if(!c||!u?.id)return;
+    let local=[];try{local=typeof favorites!=='undefined'?[...favorites].map(String):[]}catch(_){}
+    const q=await c.from('user_recipe_collections').select('recipe_key,is_favorite,is_saved').eq('user_id',u.id);
+    if(q.error)throw q.error;
+    const rows=q.data||[];
+    if(rows.length){
+      const ids=rows.filter(x=>x.is_favorite).map(x=>String(x.recipe_key));
+      try{favorites.clear();ids.forEach(id=>{const n=Number(id);favorites.add(Number.isNaN(n)?id:n)});localStorage.setItem('tn_favs',JSON.stringify([...favorites]));}catch(_){}
+      return;
+    }
+    for(const id of local){
+      const r=getRecipes().find(x=>String(x.id)===id);if(!r)continue;
+      const payload={user_id:u.id,recipe_key:id,recipe_title:r.name||r.title||'Receita',recipe_category:r.category||'',recipe_snapshot:r,is_favorite:true,is_saved:true,updated_at:new Date().toISOString()};
+      const {error}=await c.from('user_recipe_collections').upsert(payload,{onConflict:'user_id,recipe_key'});if(error)throw error;
     }
   }
   ensurePages();
