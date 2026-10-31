@@ -260,13 +260,10 @@
     return ['admin','master'].includes(data?.role);
   }
   async function tnRefreshRecipeSocial(keyValue){
-    const c=client(),u=me();if(!c)return;const key=String(keyValue);
-    const [vr,cr,rr]=await Promise.all([
-      c.from('recipe_feedback').select('user_id,vote').eq('recipe_key',key),
-      c.from('recipe_comments').select('id,user_id,display_name,body,created_at').eq('recipe_key',key).order('created_at',{ascending:true}),
-      c.from('recipe_ratings').select('user_id,rating').eq('recipe_key',key)
-    ]);
-    if(vr.error)throw vr.error;if(cr.error)throw cr.error;if(rr.error)throw rr.error;
+    const c=client(),u=await waitForAuth();if(!c)return;const key=String(keyValue);
+    // Curtidas/deslikes são independentes das consultas de avaliações e comentários.
+    const vr=await c.from('recipe_feedback').select('user_id,vote').eq('recipe_key',key);
+    if(vr.error)throw vr.error;
     const votes=vr.data||[],mine=u?.id?votes.find(x=>x.user_id===u.id):null;
     const up=votes.filter(x=>x.vote==='up').length,down=votes.filter(x=>x.vote==='down').length;
     const actions=document.querySelector('#detailContent .rating-box .social-actions');
@@ -275,33 +272,41 @@
       if(upBtn){upBtn.classList.toggle('active',mine?.vote==='up');upBtn.textContent='♥ Gostei ('+up+')';}
       if(downBtn){downBtn.classList.toggle('active',mine?.vote==='down');downBtn.textContent='💔 Não gostei ('+down+')';}
     }
-    const ratings=rr.data||[],myRating=u?.id?ratings.find(x=>x.user_id===u.id)?.rating||0:0;
-    const avg=ratings.length?ratings.reduce((sum,x)=>sum+Number(x.rating),0)/ratings.length:0;
-    const summary=document.querySelector('#detailContent .rating-box .rating-summary');
-    if(summary)summary.textContent='⭐ '+(ratings.length?avg.toFixed(1):'Ainda sem avaliações')+(ratings.length?' ('+ratings.length+' avaliações)':'');
-    const stars=document.querySelector('#detailContent .rating-box .rating-stars');
-    if(stars)stars.innerHTML=[1,2,3,4,5].map(n=>'<button type="button" aria-label="Avaliar com '+n+' estrelas" class="'+(n<=myRating?'selected':'')+'" onclick="tnRateRecipe('+inlineArg(key)+','+n+')">'+(n<=myRating?'★':'☆')+'</button>').join('');
+    document.querySelectorAll('[data-recipe-card="'+CSS.escape(key)+'"]').forEach(el=>{
+      const upBtn=el.querySelector('[data-card-vote="up"]'),downBtn=el.querySelector('[data-card-vote="down"]');
+      if(upBtn){upBtn.classList.toggle('active',mine?.vote==='up');const n=upBtn.querySelector('.vote-count');if(n)n.textContent=up;}
+      if(downBtn){downBtn.classList.toggle('active',mine?.vote==='down');const n=downBtn.querySelector('.vote-count');if(n)n.textContent=down;}
+    });
+    // Falhas em avaliações ou comentários não podem impedir a sincronização dos votos.
+    const [cr,rr]=await Promise.allSettled([
+      c.from('recipe_comments').select('id,user_id,display_name,body,created_at').eq('recipe_key',key).order('created_at',{ascending:true}),
+      c.from('recipe_ratings').select('user_id,rating').eq('recipe_key',key)
+    ]);
+    if(rr.status==='fulfilled'&&!rr.value.error){
+      const ratings=rr.value.data||[],myRating=u?.id?ratings.find(x=>x.user_id===u.id)?.rating||0:0;
+      const avg=ratings.length?ratings.reduce((sum,x)=>sum+Number(x.rating),0)/ratings.length:0;
+      const summary=document.querySelector('#detailContent .rating-box .rating-summary');
+      if(summary)summary.textContent='⭐ '+(ratings.length?avg.toFixed(1):'Ainda sem avaliações')+(ratings.length?' ('+ratings.length+' avaliações)':'');
+      const stars=document.querySelector('#detailContent .rating-box .rating-stars');
+      if(stars)stars.innerHTML=[1,2,3,4,5].map(n=>'<button type="button" aria-label="Avaliar com '+n+' estrelas" class="'+(n<=myRating?'selected':'')+'" onclick="tnRateRecipe('+inlineArg(key)+','+n+')">'+(n<=myRating?'★':'☆')+'</button>').join('');
+      document.querySelectorAll('[data-recipe-card="'+CSS.escape(key)+'"] [data-card-rating]').forEach(rate=>rate.textContent='⭐ '+(ratings.length?avg.toFixed(1):'Avaliar'));
+    }else if(rr.status==='rejected'||rr.value?.error){console.warn('[TN ratings] Consulta de avaliações indisponível; votos continuam funcionando.',rr.status==='rejected'?rr.reason:rr.value.error);}
     const panel=document.querySelector('#detailContent .comments-panel');
-    if(panel){
-      const rows=cr.data||[],admin=await tnIsAdmin();
+    if(panel&&cr.status==='fulfilled'&&!cr.value.error){
+      const rows=cr.value.data||[],admin=await tnIsAdmin();
       panel.innerHTML='<h2>💬 Comentários ('+rows.length+')</h2>'+
         (rows.length?rows.map(x=>'<div class="comment-row" data-comment-id="'+tnSocialEsc(x.id)+'"><b>'+tnSocialEsc(x.display_name||'Usuário')+'</b> <span class="small muted">'+new Date(x.created_at).toLocaleString('pt-BR')+'</span><p>'+tnSocialEsc(x.body)+'</p><div class="comment-actions">'+(admin?'<button class="comment-delete" onclick="tnDeleteRecipeComment('+inlineArg(x.id)+','+inlineArg(key)+')">🗑 Excluir comentário</button>':(u?.id&&x.user_id!==u.id?'<button class="comment-report" onclick="tnReportRecipeComment('+inlineArg(x.id)+','+inlineArg(key)+')">⚑ Denunciar</button>':''))+'</div></div>').join(''):'<p class="muted">Ainda não há comentários. Seja a primeira pessoa a comentar!</p>')+
         '<div class="comment-form"><input id="commentInput" maxlength="500" placeholder="Escreva um comentário..."><button class="btn btn-primary" onclick="addRecipeComment('+inlineArg(key)+')">Comentar</button></div>';
-    }
-    const card=document.querySelectorAll('[data-recipe-card="'+CSS.escape(key)+'"]');
-    card.forEach(el=>{
-      const upBtn=el.querySelector('[data-card-vote="up"]'),downBtn=el.querySelector('[data-card-vote="down"]');
-      if(upBtn){upBtn.classList.toggle('active',mine?.vote==='up');upBtn.querySelector('.vote-count').textContent=up;}
-      if(downBtn){downBtn.classList.toggle('active',mine?.vote==='down');downBtn.querySelector('.vote-count').textContent=down;}
-      const rb=el.querySelector('[data-card-rating]');if(rb)rb.textContent='⭐ '+(ratings.length?avg.toFixed(1):'Avaliar');
-    });
+    }else if(panel){console.warn('[TN comments] Comentários indisponíveis; curtidas continuam funcionando.',cr.status==='rejected'?cr.reason:cr.value?.error);}
   }
   window.voteRecipe=async function(id,vote){
     const u=await waitForAuth(),c=client();if(!u?.id){if(typeof openAccount==='function')openAccount();return;}if(!c){alert('Serviço de avaliações indisponível.');return;}
     try{const key=String(id),q=await c.from('recipe_feedback').select('vote').eq('recipe_key',key).eq('user_id',u.id).maybeSingle();if(q.error)throw q.error;
       const res=q.data?.vote===vote?await c.from('recipe_feedback').delete().eq('recipe_key',key).eq('user_id',u.id):await c.from('recipe_feedback').upsert({recipe_key:key,user_id:u.id,vote},{onConflict:'recipe_key,user_id'});
-      if(res.error)throw res.error;await tnRefreshRecipeSocial(key);
-    }catch(e){alert('Não foi possível registrar sua reação: '+e.message);}
+      if(res.error)throw res.error;
+      await tnRefreshRecipeSocial(key);
+      if(window.tnRefreshVisibleRecipeCards)await window.tnRefreshVisibleRecipeCards(key);
+    }catch(e){console.error('[TN vote]',e);alert('Não foi possível registrar sua reação: '+(e.message||'Erro ao salvar no Supabase'));}
   };
   window.tnRateRecipe=async function(id,value){
     const u=await waitForAuth(),c=client();if(!u?.id){if(typeof openAccount==='function')openAccount();return;}
