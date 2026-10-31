@@ -111,7 +111,7 @@ function renderSearch(){
 function searchFromTop(){document.getElementById('recipeSearch').value=document.getElementById('topSearch').value;go('search');renderSearch()}
 function renderHistory(){let list=history.map(id=>recipes.find(r=>String(r.id)===String(id))).filter(Boolean);document.getElementById('historyCards').innerHTML=list.length?list.map(card).join(''):'<div class="empty"><div class="emptyicon">◷</div>As receitas que você abrir aparecerão aqui.</div>'}
 function esc(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
-function jsq(s){return JSON.stringify(String(s)).replace(/'/g,"&#39;")}
+function jsq(s){return JSON.stringify(String(s)).replace(/'/g,"\\u0027")}
 function shareRecipe(id){let r=recipes.find(x=>String(x.id)===String(id));if(!r)return;let txt=`Confira a receita ${r.name} no Tem na Geladeira!`;if(navigator.share)navigator.share({title:r.name,text:txt,url:location.href}).catch(()=>{});else if(navigator.clipboard)navigator.clipboard.writeText(txt).then(()=>alert('Texto da receita copiado!'));else alert(txt);}
 try{const saved=JSON.parse(localStorage.getItem('tn_recipes')||'null');if(Array.isArray(saved)&&saved.length)recipes=saved;}catch(e){console.warn('Receitas salvas inválidas; usando base inicial.',e)}
 
