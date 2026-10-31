@@ -362,7 +362,7 @@
     if(typeof oldToggle==='function'&&!window.__tnFavoriteWrapped){window.toggleFavorite=function(id){
       const result=oldToggle.apply(this,arguments);const u=me(),c=client(),fav=(()=>{try{return favorites.has(id)}catch(_){return false}})();
       if(u?.id&&c){const key=String(id),r=getRecipes().find(x=>String(x.id)===key);window.__tnFavoriteSyncs=window.__tnFavoriteSyncs||{};window.__tnFavoriteSyncs[key]=c.from('user_recipe_collections').select('is_saved').eq('user_id',u.id).eq('recipe_key',key).maybeSingle().then(q=>{
-        if(q.error)throw q.error;return c.from('user_recipe_collections').upsert({user_id:u.id,recipe_key:key,recipe_title:r?.name||r?.title||'Receita',recipe_category:r?.category||'',recipe_snapshot:r||{},is_favorite:fav,is_saved:!!q.data?.is_saved,updated_at:new Date().toISOString()},{onConflict:'user_id,recipe_key'});
+        if(q.error)throw q.error;return c.from('user_recipe_collections').upsert({user_id:u.id,recipe_key:key,recipe_title:r?.name||r?.title||'Receita',recipe_category:r?.category||'',recipe_snapshot:r||{},is_favorite:fav,is_saved:fav,updated_at:new Date().toISOString()},{onConflict:'user_id,recipe_key'});
       }).then(res=>{if(res?.error)throw res.error;}).catch(e=>console.warn('[TN favorite sync]',e.message));}
       return result;
     };window.__tnFavoriteWrapped=true;}
