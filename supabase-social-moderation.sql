@@ -1,16 +1,28 @@
--- Tem na Geladeira: avaliações por estrelas e denúncias de comentários.
--- Execute no Supabase SQL Editor depois de supabase-community.sql.
+-- Tem na Geladeira: correção compatível da tabela de avaliações + denúncias.
+-- Pode executar novamente com segurança no Supabase SQL Editor.
 
 begin;
 
 create table if not exists public.recipe_ratings (
-  recipe_key text not null,
-  user_id uuid not null references auth.users(id) on delete cascade,
-  rating smallint not null check (rating between 1 and 5),
+  recipe_key text,
+  user_id uuid references auth.users(id) on delete cascade,
+  rating smallint,
   created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now(),
-  primary key (recipe_key, user_id)
+  updated_at timestamptz not null default now()
 );
+
+-- Corrige também instalações em que a tabela já existia com colunas incompletas.
+alter table public.recipe_ratings add column if not exists recipe_key text;
+alter table public.recipe_ratings add column if not exists user_id uuid references auth.users(id) on delete cascade;
+alter table public.recipe_ratings add column if not exists rating smallint;
+alter table public.recipe_ratings add column if not exists created_at timestamptz not null default now();
+alter table public.recipe_ratings add column if not exists updated_at timestamptz not null default now();
+
+create unique index if not exists recipe_ratings_recipe_user_uidx
+  on public.recipe_ratings(recipe_key, user_id);
+create index if not exists recipe_ratings_recipe_key_idx
+  on public.recipe_ratings(recipe_key);
+
 alter table public.recipe_ratings enable row level security;
 drop policy if exists "Recipe ratings are publicly readable" on public.recipe_ratings;
 create policy "Recipe ratings are publicly readable"
@@ -62,5 +74,8 @@ create policy "Admins delete recipe comments"
 grant select, insert on public.comment_reports to authenticated;
 grant update on public.comment_reports to authenticated;
 grant select, delete on public.recipe_comments to authenticated;
+
+-- Atualiza o cache de esquema usado pela API REST do Supabase.
+notify pgrst, 'reload schema';
 
 commit;
