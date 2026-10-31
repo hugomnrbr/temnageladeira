@@ -162,10 +162,26 @@ try{
 try{const customIngredients=JSON.parse(localStorage.getItem('tn_custom_ingredients')||'[]');for(const item of customIngredients){if(Array.isArray(item)&&item[0]&&!ingredients.some(x=>String(x[0]).toLowerCase()===String(item[0]).toLowerCase()))ingredients.push(item)}}catch(e){}
 try{const removedIngredients=new Set(JSON.parse(localStorage.getItem('tn_removed_ingredients')||'[]').map(x=>String(x).toLocaleLowerCase('pt-BR')));ingredients=ingredients.filter(x=>!removedIngredients.has(String(x[0]).toLocaleLowerCase('pt-BR')))}catch(e){}
 const categoryInfo=[['Café da manhã','☕'],['Almoço e jantar','🍴'],['Lanches','🥪'],['Bolos e tortas','🎂'],['Acompanhamentos','🥘'],['Sobremesas','🧁'],['Bebidas','🥤'],['Saladas','🥗']];
-const norm=s=>String(s).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim();const ingredientKey=value=>{
-  const key=norm(value).replace(/\\s+/g,' ');
-  const aliases={'ovos':'ovo','ovo':'ovo'};
-  return aliases[key]||key;
+const norm=s=>String(s).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim();
+const ingredientKey=value=>{
+  const key=norm(value).replace(/\s+/g,' ');
+  const irregular={'ovos':'ovo','paes':'pao','maos':'mao','irmaos':'irmao','cidadaos':'cidadao','paises':'pais','limoes':'limao','baloes':'balao','leoes':'leao','papeis':'papel','aneis':'anel','fieis':'fiel','pasteis':'pastel','funis':'funil','barris':'barril','albuns':'album','homens':'homem','jovens':'jovem','itens':'item','viagens':'viagem','imagens':'imagem','vezes':'vez'};
+  if(irregular[key])return irregular[key];
+  return key.split(' ').map(word=>{
+    if(word.length<4)return word;
+    if(/oes$/.test(word))return word.replace(/oes$/,'ao');
+    if(/aes$/.test(word))return word.replace(/aes$/,'ao');
+    if(/aos$/.test(word))return word.replace(/aos$/,'ao');
+    if(/ais$/.test(word))return word.replace(/ais$/,'al');
+    if(/eis$/.test(word))return word.replace(/eis$/,'el');
+    if(/ois$/.test(word))return word.replace(/ois$/,'ol');
+    if(/res$/.test(word))return word.replace(/es$/,'');
+    if(/ns$/.test(word))return word.replace(/ns$/,'m');
+    if(/is$/.test(word))return word.replace(/is$/,'il');
+    if(/as$/.test(word)||/es$/.test(word)||/os$/.test(word)||/us$/.test(word))return word.slice(0,-1);
+    if(/s$/.test(word)&&!/(ss|us|is)$/.test(word))return word.slice(0,-1);
+    return word;
+  }).join(' ');
 };
 let selected=new Set(JSON.parse(localStorage.getItem('tn_ingredients')||'[]')),favorites=new Set(JSON.parse(localStorage.getItem('tn_favs')||'[]')),history=JSON.parse(localStorage.getItem('tn_history')||'[]'),currentRecipe=null,previousPage='search',resultKind='all',ingredientCategory='Todos',searchCategory='Todos',searchType='Todos';
 
