@@ -377,7 +377,7 @@
     const rows=q.data||[];
     if(rows.length){
       const ids=rows.filter(x=>x.is_favorite).map(x=>String(x.recipe_key));
-      try{favorites.clear();ids.forEach(id=>{const n=Number(id);favorites.add(Number.isNaN(n)?id:n)});localStorage.setItem('tn_favs',JSON.stringify([...favorites]));}catch(_){}
+      try{favorites.clear();ids.forEach(id=>{const n=Number(id);favorites.add(Number.isNaN(n)?id:n)});localStorage.setItem('tn_favs',JSON.stringify([...favorites]));if(typeof renderFavorites==='function')renderFavorites();if(typeof renderHome==='function')renderHome();}catch(_){}
       return;
     }
     for(const id of local){
