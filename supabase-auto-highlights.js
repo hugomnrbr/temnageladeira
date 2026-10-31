@@ -11,7 +11,7 @@ window.tnRecordRecipeView=async function(id){
  const key=String(id),storageKey='tn_viewed_'+key,last=Number(localStorage.getItem(storageKey)||0),now=Date.now();
  if(now-last<30*60*1000)return;
  localStorage.setItem(storageKey,String(now));
- const {error}=await client.from('recipe_views').insert({recipe_key:key});
+ const {error}=await client.from('recipe_view_events').insert({recipe_key:key});
  if(error)console.warn('[Destaques] Não foi possível registrar visualização:',error.message);
  cache=null;
 };
@@ -21,7 +21,7 @@ window.tnLoadAutomaticHighlights=async function(force){
  let views=[],ratings=[];
  if(client){
   const [v,r]=await Promise.all([
-   client.from('recipe_views').select('recipe_key,viewed_at').gte('viewed_at',since),
+   client.from('recipe_view_events').select('recipe_key,viewed_at').gte('viewed_at',since),
    client.from('recipe_ratings').select('recipe_key,rating')
   ]);
   if(!v.error)views=v.data||[];else console.warn('[Destaques] Erro ao consultar acessos:',v.error.message);
